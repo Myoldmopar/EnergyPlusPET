@@ -19,21 +19,11 @@ jobs:
         with:
           python-version: 3.8
       - name: Install Pip Dependencies
-        run: pip install nose coverage
+        run: pip install nose coverage coveralls
       - name: Run Tests
         run: nosetests
-      - name: Coveralls Parallel
-        uses: coverallsapp/github-action@9ba913c152ae4be1327bfb9085dc806cedb44057  # 1.1.3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          flag-name: run-${{ matrix.os }}
-          parallel: true
-  finish:
-    needs: unit_tests
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@9ba913c152ae4be1327bfb9085dc806cedb44057  # 1.1.3
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        parallel-finished: true
+      - name: Coveralls
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
