@@ -7,7 +7,7 @@ readme_file = pathlib.Path(__file__).parent.resolve() / 'README.md'
 readme_contents = readme_file.read_text()
 
 setup(
-    name="EnergyPlus P.E.T.",
+    name="energyplus_pet",
     version=VERSION,
     packages=['energyplus_pet'],
     description="Parameter Estimation Tools for Generating EnergyPlus Inputs from Raw Performance Data",
@@ -18,6 +18,6 @@ setup(
     url='https://github.com/Myoldmopar/EnergyPlusPet',
     license='UnlicensedForNow',
     entry_points={
-        'console_scripts': ['ep_pet_gui=energyplus_pet.main:main_gui']
+        'console_scripts': ['energyplus_pet_gui=energyplus_pet.main:main_gui']
     }
 )
