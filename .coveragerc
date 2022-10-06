@@ -1,3 +1,4 @@
 [report]
 omit =
     */energyplus_pet/forms/*
+    */energyplus_pet/runner.py

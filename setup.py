@@ -18,6 +18,6 @@ setup(
     url='https://github.com/Myoldmopar/EnergyPlusPet',
     license='UnlicensedForNow',
     entry_points={
-        'console_scripts': ['energyplus_pet_gui=energyplus_pet.main:main_gui']
+        'console_scripts': ['energyplus_pet_gui=energyplus_pet.runner:main_gui']
     }
 )
