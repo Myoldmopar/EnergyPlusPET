@@ -13,9 +13,9 @@ Code coverage is exercised purely on Ubuntu and pushed to coveralls, available [
 
 ## Documentation
 
-[![Sphinx docs to gh-pages](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/docs.yml/badge.svg)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/docs.yml)
+[![Documentation Status](https://readthedocs.org/projects/energypluspet/badge/?version=latest)](https://energypluspet.readthedocs.io/en/latest/?badge=latest)
 
-Docs are built from Sphinx by GitHub Actions and followed up with a deployment to GH-Pages using Actions, available [here](https://myoldmopar.github.io/EnergyPlusPET/).
+Docs are built on ReadTheDocs and hosted [here](https://energypluspet.readthedocs.io/en/latest/).
 
 ## Releases
 
