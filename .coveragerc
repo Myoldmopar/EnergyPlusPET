@@ -1,0 +1,3 @@
+[report]
+omit =
+    */energyplus_pet/forms/*
