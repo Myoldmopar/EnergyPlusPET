@@ -6,16 +6,16 @@ This project is a cross platform Python (Tk) GUI and tool kit for generating Ene
 
 [![Flake8](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/flake8.yml/badge.svg)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/flake8.yml)
 [![Tests](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/test.yml/badge.svg)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/Myoldmopar/EnergyPlusPET/badge.svg?branch=main)](https://coveralls.io/github/Myoldmopar/EnergyPlusPET?branch=main)
 
 Code is checked for style and with unit tests by GitHub Actions using nosetests to sniff out the tests.
+Code coverage is exercised purely on Ubuntu and pushed to coveralls, available [here](https://coveralls.io/github/Myoldmopar/EnergyPlusPET?branch=main).
 
 ## Documentation
 
 [![Sphinx docs to gh-pages](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/docs.yml/badge.svg)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/docs.yml)
 
-[![gh-pages](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/pages/pages-build-deployment)
-
-Docs are built from Sphinx by GitHub Actions and followed up with a deployment to GH-Pages using Actions, available at https://myoldmopar.github.io/EnergyPlusPET/
+Docs are built from Sphinx by GitHub Actions and followed up with a deployment to GH-Pages using Actions, available [here](https://myoldmopar.github.io/EnergyPlusPET/).
 
 ## Releases
 
