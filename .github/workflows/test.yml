@@ -13,12 +13,27 @@ jobs:
         os: [ windows-latest, macos-11, macos-12, ubuntu-20.04, ubuntu-22.04 ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@93ea575  # v2
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@b55428b  # v4.2.0
         with:
           python-version: 3.8
       - name: Install Pip Dependencies
         run: pip install nose coverage
       - name: Run Tests
         run: nosetests
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@9ba913c  # 1.1.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: run-${{ matrix.os }}
+          parallel: true
+  finish:
+    needs: unit_tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true
