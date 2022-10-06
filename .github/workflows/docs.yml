@@ -2,8 +2,8 @@ name: Sphinx docs to gh-pages
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
 
 jobs:
   sphinx_docs_to_gh-pages:
