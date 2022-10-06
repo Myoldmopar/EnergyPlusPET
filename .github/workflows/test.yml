@@ -1,0 +1,21 @@
+name: Run Tests
+
+on: [push]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unit_tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Pip Dependencies
+        run: pip install nose coverage
+      - name: Run Tests
+        run: nosetests

@@ -1,0 +1,33 @@
+name: PyPIRelease
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install Pip Dependencies
+      shell: bash
+      run: pip install wheel
+
+    - name: Build the Wheel
+      shell: bash
+      run: rm -rf dist/ build/ && python3 setup.py bdist_wheel sdist
+
+    - name: Deploy on Test PyPi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPIPW }}
+        repository_url: https://test.pypi.org/legacy/
