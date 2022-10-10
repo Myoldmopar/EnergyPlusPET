@@ -5,8 +5,8 @@ from queue import Queue
 from threading import Thread
 from time import sleep
 from tkinter import Tk, Button, Frame, Label, BOTH, LEFT, TOP, BOTTOM, \
-    W, X, Y, SUNKEN, END, Menu, IntVar, StringVar, scrolledtext
-from tkinter.ttk import LabelFrame, Progressbar, Treeview, Radiobutton, Checkbutton, Separator
+    NSEW, W, EW, S, X, Y, SW, SUNKEN, END, Menu, IntVar, StringVar, scrolledtext, Scrollbar
+from tkinter.ttk import LabelFrame, Progressbar, Treeview, Radiobutton, Checkbutton, Separator, Style
 
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.equipment.types import EquipType
@@ -35,13 +35,13 @@ class OutputType(Enum):
 class EnergyPlusPetWindow:
     """A really great parameter estimation tool main window"""
 
-    def __init__(self) -> None:
+    def __init__(self, root: Tk) -> None:
         """
         The main window of the parameter estimation tool GUI workflow.
         This window stores an instance of tk.Tk since everything GUI-related
         starts with this form.
         """
-        self.root = Tk()
+        self.root = root
         self.program_name = NICE_NAME
 
         # setup event listeners
@@ -66,12 +66,8 @@ class EnergyPlusPetWindow:
         # set the GUI title
         self.root.title(f"{NICE_NAME} {VERSION}")
 
-        # build thw window itself
-        self.window = Frame(self.root, borderwidth=10)
-        self.window.pack()
-
-        # now build the top menubar
-        menubar = Menu(self.window)
+        # now build the top menubar, it's not part of the geometry, but a config parameter on the root Tk object
+        menubar = Menu(self.root)
         menu_file = Menu(menubar, tearoff=0)
         menu_file.add_command(label="Reinitialize Form", command=self.reinitialize_form)
         menu_file.add_command(label="Start Catalog Data Wizard", command=self.catalog_data_wizard)
@@ -86,11 +82,8 @@ class EnergyPlusPetWindow:
         menubar.add_cascade(label="Help", menu=menu_help)
         self.root.config(menu=menubar)
 
-        middle_row = Frame(self.window)
-        middle_row.pack(side=TOP, padx=3, pady=3)
-
-        label_frame_equip_type = LabelFrame(middle_row, text="Equipment Type")
-        label_frame_equip_type.pack(side=LEFT, padx=3, pady=3, fill=Y)
+        label_frame_equip_type = LabelFrame(self.root, text="Equipment Type")
+        label_frame_equip_type.grid(row=0, column=0, sticky=NSEW)
         self.tree_equip = Treeview(label_frame_equip_type, columns=('Type',), show='tree')
         # eventually use a defined dictionary somewhere for the tree items and keywords
         self.equip_ids = TreeViewEquipIDMaps()
@@ -115,12 +108,12 @@ class EnergyPlusPetWindow:
         tree_branch_const_pump = self.tree_equip.insert(parent=tree_root_pumps, index='end', text="Constant Speed Pump")
         leaf = self.tree_equip.insert(parent=tree_branch_const_pump, index='end', text='Non-Dimensional')
         self.equip_ids.add_to_map(EquipType.Pump_ConstSpeed_ND, leaf)
-        self.tree_equip.pack(side=TOP, padx=3, pady=3)
+        self.tree_equip.pack(side=TOP, padx=3, pady=3, expand=True)
         button_engage = Button(label_frame_equip_type, text='Engage Equipment Type Selection', command=self.engage)
         button_engage.pack(side=TOP, padx=3, pady=3)
 
-        label_frame_control = LabelFrame(middle_row, text="Options and Controls")
-        label_frame_control.pack(side=LEFT, padx=3, pady=3, fill=Y)
+        label_frame_control = LabelFrame(self.root, text="Options and Controls")
+        label_frame_control.grid(row=0, column=1, sticky=NSEW)
         self.output_type = StringVar(value=OutputType.IDFObject.name)
         Radiobutton(
             label_frame_control, text="IDF Object", value=OutputType.IDFObject.name, variable=self.output_type
@@ -159,15 +152,23 @@ class EnergyPlusPetWindow:
         )
         self.button_save_data.pack(side=TOP, padx=3, pady=3)
 
-        label_frame_output = LabelFrame(middle_row, text="Parameter Output")
-        label_frame_output.pack(side=LEFT, padx=3, pady=3)
-        self.text_area = scrolledtext.ScrolledText(label_frame_output, wrap='none', width=40, height=20)
+        label_frame_output = LabelFrame(self.root, text="Parameter Output")
+        label_frame_output.grid(row=0, column=2, sticky=NSEW)
+        horizontal_scroller = Scrollbar(label_frame_output, orient='horizontal')
+        horizontal_scroller.pack(side=BOTTOM, fill=X)
+        self.text_area = scrolledtext.ScrolledText(
+            label_frame_output, wrap='none', width=40, height=20, xscrollcommand=horizontal_scroller.set
+        )
         self.text_area.pack(side=TOP, padx=3, pady=3, fill=BOTH, expand=True)
-        self.text_area.insert(END, '\n'.join(["BLAH"*12]*10))
+        self.text_area.insert(END, '\n'.join(["BLAH"*12]*40))
+        horizontal_scroller.config(command=self.text_area.xview)
 
         self.status = StringVar(value="Form Initialized, Catalog Data: Empty")
-        status_bar = Label(self.window, relief=SUNKEN, anchor=W, textvariable=self.status)
-        status_bar.pack(side=BOTTOM, fill=X)
+        status_bar = Label(self.root, relief=SUNKEN, anchor=SW, textvariable=self.status)
+        status_bar.grid(row=1, column=0, columnspan=3, sticky=S)
+
+        # self.root.grid_rowconfigure(1, weight=1)
+        # self.root.grid_columnconfigure(1, weight=1)
 
     def reinitialize_form(self):
         print(f"{self.program_name} : {datetime.now()} : {stack()[0][3]}")
