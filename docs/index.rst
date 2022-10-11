@@ -7,6 +7,8 @@ We'll have a nice walkthrough here, and then here's library documentation.
    :maxdepth: 2
    :caption: Contents:
 
+   new_component_type
+   new_unit_type
    forms/main
    utility
 
