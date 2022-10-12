@@ -34,7 +34,7 @@ class CorrectionFactor:
     def not_new_anymore(self):
         self.is_new_or_blank = False
 
-    def draw(self, parent: Frame) -> LabelFrame:
+    def render_as_tk_frame(self, parent: Frame) -> LabelFrame:  # pragma: no cover
         f = LabelFrame(parent, text=self.name)
         p = 4
         Button(f, text="❌ Remove", command=self.remove).grid(

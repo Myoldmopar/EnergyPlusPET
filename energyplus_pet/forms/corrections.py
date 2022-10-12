@@ -1,15 +1,25 @@
-from tkinter import Toplevel, Button, Frame, Label, simpledialog, HORIZONTAL, TOP, X
+from enum import Enum, auto
+from tkinter import Toplevel, Button, Frame, Label, simpledialog, HORIZONTAL, TOP, X, StringVar
 from tkinter.ttk import Separator
-from typing import List, Union
+from typing import List
 
 from energyplus_pet.corrections import CorrectionFactor
 
 
+class CorrectionFactorFormResponse(Enum):
+    Cancel = auto()
+    Done = auto()
+    Skip = auto()
+    Error = auto()
+
+
 class CorrectionFactorForm(Toplevel):
-    def __init__(self, parent_window):
+    def __init__(self, parent_window, existing_factors: List[CorrectionFactor] = None):
         super().__init__(parent_window, height=200, width=200)
-        self._factors: List[CorrectionFactor] = []
-        self.return_data: Union[None, List[CorrectionFactor]] = None
+        if existing_factors is None:
+            existing_factors = []
+        self.factors: List[CorrectionFactor] = existing_factors
+        self.exit_code = CorrectionFactorFormResponse.Error
         # create all the objects
         lbl = Label(self, text="""In order to estimate parameters, all data categories should have at least two values.
 If all values are constant, a curve fit cannot be generated.
@@ -23,7 +33,8 @@ If you have any correction factors, add them here, otherwise, press done to cont
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
         btn_add = Button(button_frame, text="Add Factor", command=self.add_factor)
-        btn_ok = Button(button_frame, text="OK", command=self.ok)
+        self.txt_ok_skip = StringVar()
+        btn_ok_skip = Button(button_frame, textvariable=self.txt_ok_skip, command=self.ok_skip)
         btn_cancel = Button(button_frame, text="Cancel", command=self.cancel)
         # pack everything
         lbl.pack(side=TOP, fill=X, expand=True, padx=3, pady=3)
@@ -32,12 +43,14 @@ If you have any correction factors, add them here, otherwise, press done to cont
         s_1.pack(side=TOP, fill=X, expand=True, padx=3, pady=3)
         button_frame.pack(side=TOP, fill=X, expand=True, padx=3, pady=3)
         btn_add.grid(row=0, column=0, padx=3, pady=3)
-        btn_ok.grid(row=0, column=1, padx=3, pady=3)
+        btn_ok_skip.grid(row=0, column=1, padx=3, pady=3)
         btn_cancel.grid(row=0, column=2, padx=3, pady=3)
         # configure the grid
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.grid_columnconfigure(2, weight=1)
+        # draw factors, in case there already are any
+        self.draw_factors()
         # set up connections/config calls as needed
         pass
         # finalize UI operations
@@ -49,23 +62,25 @@ If you have any correction factors, add them here, otherwise, press done to cont
         # destroy all widgets from frame
         for widget in self.factor_frame.winfo_children():
             widget.destroy()
-        for i, f in enumerate(self._factors):
-            f.draw(self.factor_frame).grid(row=i, column=0, padx=3, pady=3)
+        for i, f in enumerate(self.factors):
+            f.render_as_tk_frame(self.factor_frame).grid(row=i, column=0, padx=3, pady=3)
         self.factor_frame.grid_columnconfigure(0, weight=1)
 
     def add_factor(self):
         name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
         if name is None:
             return
-        self._factors.append(CorrectionFactor(name))
+        self.factors.append(CorrectionFactor(name))
         self.draw_factors()
 
-    def ok(self):
-        self.return_data = self._factors
+    def ok_skip(self):
+        if self.txt_ok_skip == "OK":
+            self.exit_code = CorrectionFactorFormResponse.Done
+        else:
+            self.exit_code = CorrectionFactorFormResponse.Skip
         self.grab_release()
         self.destroy()
 
     def cancel(self):
-        self.return_data = None
         self.grab_release()
         self.destroy()

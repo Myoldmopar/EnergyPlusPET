@@ -18,7 +18,7 @@ from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.calculator import ParameterCalculator
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.types import EquipType
-from energyplus_pet.forms.corrections import CorrectionFactorForm
+from energyplus_pet.forms.corrections import CorrectionFactorForm, CorrectionFactorFormResponse
 
 
 class TreeViewEquipIDMaps:
@@ -293,9 +293,16 @@ class EnergyPlusPetWindow(Tk):
         # first open a correction factor definition form window
         cdf = CorrectionFactorForm(self)
         self.wait_window(cdf)
-        if cdf.return_data is None:
+        if cdf.exit_code == CorrectionFactorFormResponse.Cancel:
+            # in the original code, this would set CorrectionsExist to false, not sure that's right
             return  # correction data form was cancelled, just move on
-        correction_factor_summaries = cdf.return_data
+        elif cdf.exit_code == CorrectionFactorFormResponse.Done:
+            pass
+        elif cdf.exit_code == CorrectionFactorFormResponse.Skip:
+            pass
+        elif cdf.exit_code == CorrectionFactorFormResponse.Error:
+            pass
+        correction_factor_summaries = cdf.factors
         # if that was successful, need to open individual correction entry forms for each factor
         for cf in correction_factor_summaries:
             # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
