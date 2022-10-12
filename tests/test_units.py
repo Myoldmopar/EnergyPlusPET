@@ -1,89 +1,103 @@
-from typing import Type
+from typing import Type, Union
 from unittest import TestCase
 
 from energyplus_pet.units import PowerUnits, FlowUnits, TempUnits, PressureUnits, LengthUnits, RotationSpeedUnits
 
 
-def worker_construction(test_class: TestCase, unit_type: Type, value: float, unit: int):
-    u = unit_type(value, unit)
-    # verifies the interface
-    gotten_units = u.get_units()
-    test_class.assertIsInstance(gotten_units, list)
-    for gu in gotten_units:
-        test_class.assertIsInstance(gu, int)
-    gotten_strings = u.get_unit_strings()
-    for gs in gotten_strings:
-        test_class.assertIsInstance(gs, str)
-    test_class.assertIsInstance(u.calculation_unit(), int)
-    test_class.assertIsInstance(u.base_ip_unit(), int)
-    test_class.assertIsInstance(u.base_si_unit(), int)
-    # verifies construction and members are set up properly
-    test_class.assertEqual(value, u.value)
-    test_class.assertEqual(unit, u.units)
+class TestLayer(TestCase):
+
+    def setUp(self) -> None:
+        self.unit_type: Union[Type, None] = None
+
+    def set_unit_type(self, unit_type: Type):
+        self.unit_type = unit_type
+
+    def worker_construction(self, value: float, unit: int):
+        if self.unit_type is None:
+            self.fail("Forgot to call set_unit_type before calling worker_construction")
+        u = self.unit_type(value, unit)
+        # verifies the interface
+        gotten_units = u.get_units()
+        self.assertIsInstance(gotten_units, list)
+        for gu in gotten_units:
+            self.assertIsInstance(gu, int)
+        gotten_strings = u.get_unit_strings()
+        for gs in gotten_strings:
+            self.assertIsInstance(gs, str)
+        self.assertIsInstance(u.calculation_unit(), int)
+        self.assertIsInstance(u.base_ip_unit(), int)
+        self.assertIsInstance(u.base_si_unit(), int)
+        # verifies construction and members are set up properly
+        self.assertEqual(value, u.value)
+        self.assertEqual(unit, u.units)
+
+    def worker_conversion(self, init_val: float, init_units: int, expected_val: float, places: int):
+        if self.unit_type is None:
+            self.fail("Forgot to call set_unit_type before calling worker_conversion")
+        u = self.unit_type(init_val, init_units)
+        u.convert_to_calculation_unit()
+        self.assertAlmostEqual(expected_val, u.value, places)
+        self.assertEqual(u.calculation_unit(), u.units)
 
 
-def worker_conversion(
-        test_cls: TestCase, unit_type: Type, init_val: float, init_units: int, expected_val: float, places: int
-):
-    u = unit_type(init_val, init_units)
-    u.convert_to_calculation_unit()
-    test_cls.assertAlmostEqual(expected_val, u.value, places)
-    test_cls.assertEqual(u.calculation_unit(), u.units)
-
-
-class TestPowerUnits(TestCase):
+class TestPowerUnits(TestLayer):
     def test_power_units(self):
         unit_type = PowerUnits
-        worker_construction(self, unit_type, 1.0, unit_type.Kilowatts)
-        worker_conversion(self, unit_type, 1.0, unit_type.Kilowatts, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.Watts, 0.001, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.BTU_hour, 0.00029308, 8)
-        worker_conversion(self, unit_type, 1.0, unit_type.MBTU_hour, 0.29308, 5)
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.Kilowatts)
+        self.worker_conversion(1.0, unit_type.Kilowatts, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.Watts, 0.001, 6)
+        self.worker_conversion(1.0, unit_type.BTU_hour, 0.00029308, 8)
+        self.worker_conversion(1.0, unit_type.MBTU_hour, 0.29308, 5)
 
 
-class TestFlowUnits(TestCase):
+class TestFlowUnits(TestLayer):
     def test_flow_units(self):
         unit_type = FlowUnits
-        worker_construction(self, unit_type, 1.0, unit_type.M3S)
-        worker_conversion(self, unit_type, 1.0, unit_type.M3S, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.CFM, 0.0004719, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.GPM, 0.00006309, 8)
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.M3S)
+        self.worker_conversion(1.0, unit_type.M3S, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.CFM, 0.0004719, 6)
+        self.worker_conversion(1.0, unit_type.GPM, 0.00006309, 8)
 
 
-class TestTemperatureUnits(TestCase):
+class TestTemperatureUnits(TestLayer):
     def test_temperature_units(self):
         unit_type = TempUnits
-        worker_construction(self, unit_type, 1.0, unit_type.C)
-        worker_conversion(self, unit_type, 1.0, unit_type.C, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.F, -17.2222, 4)
-        worker_conversion(self, unit_type, 1.0, unit_type.K, -272.15, 5)
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.C)
+        self.worker_conversion(1.0, unit_type.C, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.F, -17.2222, 4)
+        self.worker_conversion(1.0, unit_type.K, -272.15, 5)
 
 
-class TestPressureUnits(TestCase):
+class TestPressureUnits(TestLayer):
     def test_pressure_units(self):
         unit_type = PressureUnits
-        worker_construction(self, unit_type, 1.0, unit_type.Pa)
-        worker_conversion(self, unit_type, 1.0, unit_type.Pa, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.KPa, 1000.0, 4)
-        worker_conversion(self, unit_type, 1.0, unit_type.Atm, 101325.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.PSI, 6894.757, 7)
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.Pa)
+        self.worker_conversion(1.0, unit_type.Pa, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.KPa, 1000.0, 4)
+        self.worker_conversion(1.0, unit_type.Atm, 101325.0, 6)
+        self.worker_conversion(1.0, unit_type.PSI, 6894.757, 7)
 
 
-class TestLengthUnits(TestCase):
+class TestLengthUnits(TestLayer):
     def test_length_units(self):
         unit_type = LengthUnits
-        worker_construction(self, unit_type, 1.0, unit_type.Meters)
-        worker_conversion(self, unit_type, 1.0, unit_type.Meters, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.Feet, 0.3048, 4)
-        worker_conversion(self, unit_type, 1.0, unit_type.Inches, 0.0254, 4)
-        worker_conversion(self, unit_type, 1.0, unit_type.Centimeters, 0.01, 2)
-        worker_conversion(self, unit_type, 1.0, unit_type.Millimeters, 0.001, 3)
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.Meters)
+        self.worker_conversion(1.0, unit_type.Meters, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.Feet, 0.3048, 4)
+        self.worker_conversion(1.0, unit_type.Inches, 0.0254, 4)
+        self.worker_conversion(1.0, unit_type.Centimeters, 0.01, 2)
+        self.worker_conversion(1.0, unit_type.Millimeters, 0.001, 3)
 
 
-class TestRotationSpeedUnits(TestCase):
+class TestRotationSpeedUnits(TestLayer):
     def test_rotation_speed_units(self):
         unit_type = RotationSpeedUnits
-        worker_construction(self, unit_type, 1.0, unit_type.RevsPerSecond)
-        worker_conversion(self, unit_type, 1.0, unit_type.RevsPerSecond, 1.0, 6)
-        worker_conversion(self, unit_type, 1.0, unit_type.RevsPerMinute, 0.01666, 4)
-        worker_conversion(self, unit_type, 1.0, unit_type.RadiansPerSecond, 0.159154, 4)
+        self.set_unit_type(unit_type)
+        self.worker_conversion(1.0, unit_type.RevsPerSecond, 1.0, 6)
+        self.worker_conversion(1.0, unit_type.RevsPerMinute, 0.01666, 4)
+        self.worker_conversion(1.0, unit_type.RadiansPerSecond, 0.159154, 4)
