@@ -1,6 +1,6 @@
 from typing import List
 
-from energyplus_pet.corrections import CorrectionFactor
+from energyplus_pet.correction_factor import CorrectionFactor
 
 
 class CatalogDataManager:

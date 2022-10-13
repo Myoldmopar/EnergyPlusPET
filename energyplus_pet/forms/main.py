@@ -17,6 +17,8 @@ from tkinter.ttk import LabelFrame, Progressbar, Treeview, Radiobutton, Checkbut
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.calculator import ParameterCalculator
 from energyplus_pet.data_manager import CatalogDataManager
+from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.equipment.manager import EquipmentFactory
 from energyplus_pet.equipment.types import EquipType
 from energyplus_pet.forms.corrections import CorrectionFactorForm, CorrectionFactorFormResponse
 
@@ -72,7 +74,7 @@ class EnergyPlusPetWindow(Tk):
 
         # set up some important member variables
         self.full_data_set = None
-        self.selected_equip_type = EquipType.InvalidType
+        self.selected_equip_instance: BaseEquipment = BaseEquipment()  # nothing for now
         self.catalog_data_in_place = False
         self.catalog_data_manager = CatalogDataManager()
         self.calculator = None
@@ -242,7 +244,7 @@ class EnergyPlusPetWindow(Tk):
         horizontal_scroller.config(command=self.output_box.xview)
 
     def set_button_status(self):
-        if self.selected_equip_type == EquipType.InvalidType:
+        if self.selected_equip_instance.this_type() == EquipType.InvalidType:
             self.button_catalog['state'] = DISABLED
             self.button_create['state'] = DISABLED
         else:
@@ -266,16 +268,16 @@ class EnergyPlusPetWindow(Tk):
 
     def engage(self):
         cur_item = self.tree_equip.focus()
-        equip_type = self.equip_ids.check_iid(cur_item)
-        if equip_type == EquipType.InvalidType:
+        potential_new_equip_type = self.equip_ids.check_iid(cur_item)
+        if potential_new_equip_type == EquipType.InvalidType:
             messagebox.showwarning("Type Issue", "Make sure to select one of the child types, not a parent tree node")
             return
         if not self.catalog_data_in_place:
             # then we are just selecting a new equip type, select it and move on
-            self.selected_equip_type = equip_type
+            self.selected_equip_instance = EquipmentFactory.factory(potential_new_equip_type)
             self.set_button_status()
             return
-        if equip_type == self.selected_equip_type:
+        if potential_new_equip_type == self.selected_equip_instance.this_type():
             messagebox.showinfo("Type Issue", "This equipment type was already engaged, not making any changes")
             return
         else:
@@ -286,12 +288,12 @@ class EnergyPlusPetWindow(Tk):
             if response:
                 self.catalog_data_in_place = False
                 self.full_data_set = None
-                self.update_status(f"New Equipment Type Selected ({equip_type})")
+                self.update_status(f"New Equipment Type Selected ({potential_new_equip_type})")
             self.set_button_status()
 
     def catalog_data_wizard(self):
         # first open a correction factor definition form window
-        cdf = CorrectionFactorForm(self)
+        cdf = CorrectionFactorForm(self, self.catalog_data_manager, self.selected_equip_instance)
         self.wait_window(cdf)
         if cdf.exit_code == CorrectionFactorFormResponse.Cancel:
             # in the original code, this would set CorrectionsExist to false, not sure that's right
@@ -315,6 +317,9 @@ class EnergyPlusPetWindow(Tk):
         self.catalog_data_in_place = True
         self.full_data_set = self.catalog_data_manager.process()
         self.set_button_status()
+
+    def get_correction_factor_summaries(self):
+        pass
 
     def create_parameters(self):
         self.var_progress.set(0)

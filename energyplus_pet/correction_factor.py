@@ -2,7 +2,7 @@ from enum import Enum, auto
 from tkinter import Button, Frame, Label, LabelFrame, TOP, Spinbox, IntVar, Scrollbar, LEFT, BOTH, RIGHT, EW, \
     BooleanVar, VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable
 from tkinter.ttk import Separator
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
 
 class CorrectionFactorType(Enum):
@@ -15,7 +15,7 @@ class CorrectionFactor:
     Defines the correction factor information and can return a Tk Frame
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, remove_callback: Callable):
         self.name = name
         self.base_column_index: int  # TODO: Use this as the OptionMenu current selection ideally
         self.base_column_str = StringVar(value="Monday")  # TODO: Select a reasonable guess from data columns
@@ -27,6 +27,7 @@ class CorrectionFactor:
         self.correction_db_value: float
         self.is_new_or_blank: bool = True
         self.remove_me = False
+        self.remove_callback = remove_callback
         self.num_corrections_var = IntVar()
         self.wb_db_factor = BooleanVar()
         self.mod_type = StringVar(value=CorrectionFactorType.Multiplier.name)
@@ -87,6 +88,7 @@ class CorrectionFactor:
 
     def remove(self):
         self.remove_me = True
+        self.remove_callback()
 
     def description(self):
         return f"CorrectionFactor {self.name}; {self.num_corrections_var.get()} corrections"

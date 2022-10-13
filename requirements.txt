@@ -1,6 +1,8 @@
 # the dependencies listed here are for developers of this library
 # dependencies required by users when they pip install this onto their system should be defined in setup.py
 
+tksheet
+
 # for building documentation
 sphinx
 

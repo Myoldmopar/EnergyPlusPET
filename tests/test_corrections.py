@@ -1,7 +1,7 @@
 from tkinter import Tk
 from unittest import TestCase
 
-from energyplus_pet.corrections import CorrectionFactor
+from energyplus_pet.correction_factor import CorrectionFactor
 
 
 class TestCorrectionFactor(TestCase):
