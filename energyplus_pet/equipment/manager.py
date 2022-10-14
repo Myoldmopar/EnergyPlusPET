@@ -1,8 +1,9 @@
 from typing import Union
 
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.equipment.types import EquipType
+from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
+from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
 
 
 class EquipmentFactory:
@@ -14,7 +15,7 @@ class EquipmentFactory:
             EquipType.WAHP_Heating_PE: None,
             EquipType.WAHP_Cooling_CurveFit: None,
             EquipType.WAHP_Cooling_PE: None,
-            EquipType.WWHP_Heating_CurveFit: None,
+            EquipType.WWHP_Heating_CurveFit: WaterToWaterHeatPumpHeatingCurveFit,
             EquipType.WWHP_Cooling_CurveFit: None,
             EquipType.Pump_ConstSpeed_ND: None,
         }

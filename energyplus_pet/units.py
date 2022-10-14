@@ -4,13 +4,13 @@ from typing import List
 
 
 class UnitType(Enum):
-    power = auto()
-    flow = auto()
-    temp = auto()
-    none = auto()
-    pressure = auto()
-    length = auto()
-    rotational_speed = auto()
+    Power = auto()
+    Flow = auto()
+    Temperature = auto()
+    Dimensionless = auto()
+    Pressure = auto()
+    Length = auto()
+    RotationalSpeed = auto()
 
 
 class BaseUnit:

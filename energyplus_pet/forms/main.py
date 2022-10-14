@@ -4,23 +4,25 @@ from inspect import stack
 from pathlib import Path
 from queue import Queue
 from threading import Thread
-from time import sleep
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y  # widget sides and directions to use in widget.pack commands
 from tkinter import END  # key used when adding data to the scrolledText object
 from tkinter import IntVar, StringVar  # GUI variables
 from tkinter import NSEW, W, EW, SW  # sticky cardinal directions to use in widget grid commands
 from tkinter import SUNKEN, DISABLED, ACTIVE  # attributes used to modify widget appearance
 from tkinter import Tk, Button, Frame, Label, PhotoImage, scrolledtext, Scrollbar, Menu  # widgets
-from tkinter import messagebox  # simple dialogs for user messages
+from tkinter import messagebox, filedialog  # simple dialogs for user messages
 from tkinter.ttk import LabelFrame, Progressbar, Treeview, Radiobutton, Checkbutton, Separator  # special ttk widgets
+from webbrowser import open as browser_open
 
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.calculator import ParameterCalculator
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.manager import EquipmentFactory
-from energyplus_pet.equipment.types import EquipType
-from energyplus_pet.forms.corrections import CorrectionFactorForm, CorrectionFactorFormResponse
+from energyplus_pet.equipment.equip_types import EquipType
+from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+from energyplus_pet.forms.corrections import CorrectionFactorSummaryForm, CorrectionFactorSummaryFormResponse
+from energyplus_pet.forms.required_data import RequiredDataPreviewForm
 
 
 class TreeViewEquipIDMaps:
@@ -134,21 +136,14 @@ class EnergyPlusPetWindow(Tk):
 
         # set up the weight of each row (even) and column (distributed) for a nice looking GUI
         self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=3)
-        self.grid_columnconfigure(1, weight=3)
-        self.grid_columnconfigure(2, weight=4)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=8)
 
     def _build_menu(self):
         menubar = Menu(self)
-        menu_file = Menu(menubar, tearoff=0)
-        menu_file.add_command(label="Start Catalog Data Wizard", command=self.catalog_data_wizard)
-        menu_file.add_command(label="Create Parameters", command=self.create_parameters)
-        menu_file.add_separator()
-        menu_file.add_command(label="Exit", command=self.quit)
-        menubar.add_cascade(label="Operations", menu=menu_file)
         menu_help = Menu(menubar, tearoff=0)
-        menu_help.add_command(label="Open documentation", command=self.help_documentation)
-        menu_help.add_command(label="What data will I need for selected equipment?", command=self.help_preview_data)
+        menu_help.add_command(label="Open online documentation...", command=self.help_documentation)
         menu_help.add_command(label="About...", command=self.help_about)
         menubar.add_cascade(label="Help", menu=menu_help)
         self.config(menu=menubar)
@@ -157,6 +152,7 @@ class EnergyPlusPetWindow(Tk):
         equip_type_scrollbar = Scrollbar(container)
         # I don't believe the Treeview object can interact with a Tk.Variable, so the tree is stored on the class
         self.tree_equip = Treeview(container, columns=('Type',), show='tree', yscrollcommand=equip_type_scrollbar.set)
+        self.tree_equip.column('#0', stretch=False)
         equip_type_scrollbar.config(command=self.tree_equip.yview)
         # eventually use a defined dictionary somewhere for the tree items and keywords
         tree_root_hp = self.tree_equip.insert(parent='', index='end', text="Heat Pumps", open=True)
@@ -219,18 +215,20 @@ class EnergyPlusPetWindow(Tk):
         )
         Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
         Button(container, text='Engage Equipment Type', command=self.engage).pack(side=TOP, padx=3, pady=3)
+        self.button_preview = Button(container, text="Required Data Description", command=self.preview_data)
+        self.button_preview.pack(side=TOP, padx=3, pady=3)
         self.button_catalog = Button(container, text="Catalog Data Wizard", command=self.catalog_data_wizard)
         self.button_catalog.pack(side=TOP, padx=3, pady=3)
         Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
         self.button_create = Button(container, text="Create Parameters", command=self.create_parameters)
         self.button_create.pack(side=TOP, padx=3, pady=3)
         Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
-        Progressbar(container, variable=self.var_progress).pack(side=TOP, padx=3, pady=3, fill=X)
-        Button(
+        self.progress = Progressbar(container, variable=self.var_progress)
+        self.progress.pack(side=TOP, padx=3, pady=3, fill=X)
+        self.button_save_data = Button(
             container, text="Save Output to File", command=self.save_data_to_file, state="disabled",
-        ).pack(
-            side=TOP, padx=3, pady=3
         )
+        self.button_save_data.pack(side=TOP, padx=3, pady=3)
 
     def _build_output(self, container):
         horizontal_scroller = Scrollbar(container, orient='horizontal')
@@ -244,29 +242,52 @@ class EnergyPlusPetWindow(Tk):
         horizontal_scroller.config(command=self.output_box.xview)
 
     def set_button_status(self):
-        if self.selected_equip_instance.this_type() == EquipType.InvalidType:
+        if self.selected_equip_instance is None or self.selected_equip_instance.this_type() == EquipType.InvalidType:
             self.button_catalog['state'] = DISABLED
             self.button_create['state'] = DISABLED
+            self.button_preview['state'] = DISABLED
         else:
             self.button_catalog['state'] = ACTIVE
+            self.button_preview['state'] = ACTIVE
             if self.catalog_data_in_place:
                 self.button_create['state'] = ACTIVE
+                self.button_save_data['state'] = ACTIVE
             else:
                 self.button_create['state'] = DISABLED
+                self.button_save_data['state'] = DISABLED
 
-    def help_documentation(self):
-        print(f"{self.program_name} : {datetime.now()} : {stack()[0][3]}")
+    @staticmethod
+    def help_documentation():
+        browser_open('https://energypluspet.readthedocs.io/en/latest/')
 
-    def help_preview_data(self):
-        print(f"{self.program_name} : {datetime.now()} : {stack()[0][3]}")
+    def preview_data(self):
+        preview = RequiredDataPreviewForm(self, self.selected_equip_instance)
+        self.wait_window(preview)
 
     def help_about(self):
-        print(f"{self.program_name} : {datetime.now()} : {stack()[0][3]}")
+        messagebox.showinfo(
+            f"About {self.program_name}",
+            "The original idea for this tool was developed in 2009ish by Edwin Lee and implemented in a VB.Net tool.\n"
+            "This new version is developed in Python to allow for easy cross platform development and packaging."
+        )
 
     def save_data_to_file(self):
-        print(f"{self.program_name} : {datetime.now()} : {stack()[0][3]}")
+        file_path = filedialog.asksaveasfilename(parent=self, defaultextension=".csv", confirmoverwrite=True)
+        if file_path is None:
+            return
+        try:
+            with open(file_path, 'w') as f:
+                f.write('hello,world')
+        except Exception as e:  # noqa  any file issue could happen
+            messagebox.showerror(self.program_name, "Could not save data to file")
 
-    def engage(self):
+    def engage(self) -> None:
+        """
+        Checks the currently selected object in the equipment tree, and if valid, assigns the
+        self.selected_equip_instance member variable to a proper equipment instance.
+
+        :return: Nothing
+        """
         cur_item = self.tree_equip.focus()
         potential_new_equip_type = self.equip_ids.check_iid(cur_item)
         if potential_new_equip_type == EquipType.InvalidType:
@@ -292,25 +313,22 @@ class EnergyPlusPetWindow(Tk):
             self.set_button_status()
 
     def catalog_data_wizard(self):
-        # first open a correction factor definition form window
-        cdf = CorrectionFactorForm(self, self.catalog_data_manager, self.selected_equip_instance)
-        self.wait_window(cdf)
-        if cdf.exit_code == CorrectionFactorFormResponse.Cancel:
-            # in the original code, this would set CorrectionsExist to false, not sure that's right
-            return  # correction data form was cancelled, just move on
-        elif cdf.exit_code == CorrectionFactorFormResponse.Done:
-            pass
-        elif cdf.exit_code == CorrectionFactorFormResponse.Skip:
-            pass
-        elif cdf.exit_code == CorrectionFactorFormResponse.Error:
-            pass
-        correction_factor_summaries = cdf.factors
+        """
+        Manages the data entry processes.  Calls child functions to display forms, handles different exits, etc.
+        This function assumes the self.selected_equip_instance has already been set to a proper instance in the engage
+        function.
+        :return:
+        """
+        # first open a correction factor definition form window, if this returns False, it means abort
+        if not self.get_correction_factor_summaries():
+            return
         # if that was successful, need to open individual correction entry forms for each factor
-        for cf in correction_factor_summaries:
+        for cf in self.catalog_data_manager.correction_factors:
+            print(cf.description())
             # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
             # cf_detailed = CorrectionFactorDetailedForm(self) # modal, blah
             # catalog.add_correction_factor(cf)
-            self.catalog_data_manager.add_correction_factor(cf)
+            # self.catalog_data_manager.add_correction_factor(cf)
         # now that we have the full correction factor details, we need to collect the main catalog data
         # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
         self.catalog_data_manager.add_base_data('Foo:Bar')
@@ -318,11 +336,20 @@ class EnergyPlusPetWindow(Tk):
         self.full_data_set = self.catalog_data_manager.process()
         self.set_button_status()
 
-    def get_correction_factor_summaries(self):
-        pass
+    def get_correction_factor_summaries(self) -> bool:
+        cdf = CorrectionFactorSummaryForm(self, self.catalog_data_manager, self.selected_equip_instance)
+        self.wait_window(cdf)
+        if cdf.exit_code == CorrectionFactorSummaryFormResponse.Cancel:
+            # in the original code, this would set CorrectionsExist to false, not sure that's right
+            return False  # correction data form was cancelled, just move on
+        elif cdf.exit_code == CorrectionFactorSummaryFormResponse.Error:
+            return False  # if an error occurred, it should have been reported, just abort the data process
+        else:
+            return True  # done/skip indicates the data manager has now gotten any/all updated correction summaries
 
     def create_parameters(self):
         self.var_progress.set(0)
+        # set buttons to disabled while it runs
         thd = Thread(target=self.long_runner, args=(self.catalog_data_manager,))  # timer thread
         thd.daemon = True
         thd.start()
@@ -336,11 +363,18 @@ class EnergyPlusPetWindow(Tk):
         else:
             self.var_status.set(f"Catalog Data is NOT READY.{status_clause}")
 
-    def handler_background_thread_update(self, value):
+    def handler_background_thread_update(self):
+        value = self.var_progress.get() + 1
         self.var_progress.set(value)
 
-    def callback_background_thread_update(self, x: int):
-        self.gui_queue.put(lambda: self.handler_background_thread_update(x))
+    def callback_background_thread_increment(self):
+        self.gui_queue.put(self.handler_background_thread_update)
+
+    def handler_background_thread_starting(self, initial_progress_value: int):
+        self.progress['maximum'] = initial_progress_value
+
+    def callback_background_thread_starting(self, initial_progress_value: int):
+        self.gui_queue.put(lambda: self.handler_background_thread_starting(initial_progress_value))
 
     def handler_background_thread_done(self, response: str):
         self.output_box.delete('1.0', END)
@@ -350,15 +384,22 @@ class EnergyPlusPetWindow(Tk):
         self.gui_queue.put(lambda: self.handler_background_thread_done(response))
 
     def long_runner(self, full_catalog_data_manager: CatalogDataManager) -> None:
-        total_seconds = 1
-        num_iterations = 100
-        for x in range(num_iterations):
-            self.callback_background_thread_update(x)
-            print(x)
-            sleep(total_seconds / num_iterations)
+        e = WaterToWaterHeatPumpHeatingCurveFit()
+        e.generate_parameters(
+            self.catalog_data_manager, self.callback_background_thread_starting,
+            self.callback_background_thread_increment, self.callback_background_thread_done
+        )
+        summary = e.to_parameter_summary()
+        # self.callback_background_thread_starting
+        # total_seconds = 1
+        # num_iterations = 100
+        # for x in range(num_iterations):
+        #     self.callback_background_thread_increment(x)
+        #     print(x)
+        #     sleep(total_seconds / num_iterations)
         # access stuff on self.calculator
         self.calculator = ParameterCalculator(full_catalog_data_manager)
-        self.callback_background_thread_done(self.calculator.output())
+        self.callback_background_thread_done(self.calculator.output() + summary)
 
     def run(self) -> None:
         """

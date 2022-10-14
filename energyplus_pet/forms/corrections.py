@@ -2,7 +2,7 @@ from enum import Enum, auto
 from functools import partial
 from platform import system
 from tkinter import Toplevel, Button, Frame, Label, simpledialog, HORIZONTAL, TOP, X, StringVar, BOTH, Canvas, \
-    Scrollbar, VERTICAL, NW, LEFT, Y, Listbox, EW
+    Scrollbar, VERTICAL, NW, LEFT, Y, Listbox, EW, RIGHT
 from tkinter.ttk import Separator
 
 from energyplus_pet.correction_factor import CorrectionFactor
@@ -10,20 +10,35 @@ from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 
 
-class CorrectionFactorFormResponse(Enum):
+class CorrectionFactorSummaryFormResponse(Enum):
     Cancel = auto()
     Done = auto()
     Skip = auto()
     Error = auto()
 
 
-class CorrectionFactorForm(Toplevel):
+class ResponseString:
+    Done = 'Done'
+    Skip = 'Skip'
+
+
+class Event:
+    LinuxWheelUp = '<Button-4>'
+    LinuxWheelDown = '<Button-4>'
+    WindowsWheelEvent = '<MouseWheel>'
+    Configure = '<Configure>'
+    WidgetEnter = '<Enter>'
+    WidgetLeave = '<Leave>'
+
+
+class CorrectionFactorSummaryForm(Toplevel):
     def __init__(self, parent_window, data_manager: CatalogDataManager, equipment: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
-        # store some
+        # store arguments for manipulation here, these are passed by assignment, in this case "by reference"
         self.data_manager = data_manager
         self.equipment = equipment
-        self.exit_code = CorrectionFactorFormResponse.Error
+        # initialize an exit code so that the main form knows how this window closed
+        self.exit_code = CorrectionFactorSummaryFormResponse.Error
         # create all the objects
         lbl = Label(self, text="""In order to estimate parameters, all data categories should have at least two values.
 If all values are constant, a curve fit cannot be generated.
@@ -34,30 +49,38 @@ These correction factors can be new flow rate/temperature values, or multipliers
 If you have any correction factors, add them here, otherwise, press done to continue.""")
         s_0 = Separator(self, orient=HORIZONTAL)
         #
-        quick_frame = Frame(self)
-        self.factor_canvas = Canvas(quick_frame)
-        self.scrollbar = Scrollbar(quick_frame, orient=VERTICAL, command=self.factor_canvas.yview)
-        self.scrollable_factor_frame = Frame(self.factor_canvas, height=20)
-        self.scrollable_factor_frame.bind(
-            "<Configure>", lambda e: self.factor_canvas.configure(scrollregion=self.factor_canvas.bbox("all"))
+        correction_factor_outer_frame = Frame(self)
+        # need to store the canvas as a member since it is "scrolled" to view the inner frame
+        self.factor_canvas = Canvas(correction_factor_outer_frame)
+        # need to store the scrollbar because we check what widget we "scrolled" later
+        self.scrollbar = Scrollbar(correction_factor_outer_frame, orient=VERTICAL, command=self.factor_canvas.yview)
+        # need to store this because it is the actual frame where we place correction factor summaries
+        self.correction_factor_inner_frame = Frame(self.factor_canvas, height=20)
+        # bind the inner frame's configure event to a lambda that will update the containing canvas
+        self.correction_factor_inner_frame.bind(
+            Event.Configure, lambda e: self.factor_canvas.configure(scrollregion=self.factor_canvas.bbox("all"))
         )
-        self.factor_canvas.create_window((0, 0), window=self.scrollable_factor_frame, anchor=NW)
+        # create a window into the inner frame to display on the canvas
+        self.factor_canvas.create_window((0, 0), window=self.correction_factor_inner_frame, anchor=NW)
+        # configure the canvas to update the scrollbar when the view is changed in any other way
         self.factor_canvas.configure(yscrollcommand=self.scrollbar.set)
+        # pack the canvas and the scrollbar inside the outer frame
         self.factor_canvas.pack(side=LEFT, fill=BOTH, expand=True, padx=3, pady=3)
-        self.scrollbar.pack(side='right', fill=Y, padx=3, pady=3)
-        self.factor_canvas.bind('<Enter>', self.bind_wheel)
-        self.factor_canvas.bind('<Leave>', self.unbind_wheel)
+        self.scrollbar.pack(side=RIGHT, fill=Y, padx=3, pady=3)
+        # bind the mouse entry/exit events to register or deregister mouse wheel listeners
+        self.factor_canvas.bind(Event.WidgetEnter, self.bind_wheel)
+        self.factor_canvas.bind(Event.WidgetLeave, self.unbind_wheel)
         #
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
         btn_add = Button(button_frame, text="Add Factor", command=self.add_factor)
-        self.txt_ok_skip = StringVar(value="Skip")
-        btn_ok_skip = Button(button_frame, textvariable=self.txt_ok_skip, command=self.ok_skip)
+        self.txt_done_skip = StringVar(value=ResponseString.Skip)
+        btn_ok_skip = Button(button_frame, textvariable=self.txt_done_skip, command=self.done_skip)
         btn_cancel = Button(button_frame, text="Cancel", command=self.cancel)
         # pack everything
         lbl.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         s_0.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
-        quick_frame.pack(side=TOP, fill=BOTH, expand=True, padx=3, pady=3)
+        correction_factor_outer_frame.pack(side=TOP, fill=BOTH, expand=True, padx=3, pady=3)
         s_1.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         button_frame.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         btn_add.grid(row=0, column=0, padx=3, pady=3)
@@ -69,8 +92,6 @@ If you have any correction factors, add them here, otherwise, press done to cont
         button_frame.grid_columnconfigure(2, weight=1)
         # draw factors, in case there already are any
         self.redraw_factors()
-        # set up connections/config calls as needed
-        pass
         # finalize UI operations
         self.wait_visibility()
         self.grab_set()
@@ -94,27 +115,25 @@ If you have any correction factors, add them here, otherwise, press done to cont
 
     def bind_wheel(self, _):
         if system() == 'Linux':
-            self.factor_canvas.bind_all("<Button-4>", partial(self.mouse_wheel, scroll=-1))
-            self.factor_canvas.bind_all("<Button-5>", partial(self.mouse_wheel, scroll=1))
+            self.factor_canvas.bind_all(Event.LinuxWheelUp, partial(self.mouse_wheel, scroll=-1))
+            self.factor_canvas.bind_all(Event.LinuxWheelDown, partial(self.mouse_wheel, scroll=1))
         elif system() == 'Windows':
-            self.factor_canvas.bind_all("<MouseWheel>", self.mouse_wheel_windows)
+            self.factor_canvas.bind_all(Event.WindowsWheelEvent, self.mouse_wheel_windows)
 
     def unbind_wheel(self, _):
         if system() == 'Linux':
-            self.factor_canvas.unbind_all("<Button-4>")
-            self.factor_canvas.unbind_all("<Button-5>")
+            self.factor_canvas.unbind_all(Event.LinuxWheelUp)
+            self.factor_canvas.unbind_all(Event.LinuxWheelDown)
         elif system() == 'Windows':
-            self.factor_canvas.unbind_all("<MouseWheel>")
+            self.factor_canvas.unbind_all(Event.WindowsWheelEvent)
 
     def redraw_factors(self):
         # destroy all widgets from frame
-        for widget in self.scrollable_factor_frame.winfo_children():
+        for widget in self.correction_factor_inner_frame.winfo_children():
             widget.destroy()
         for i, f in enumerate(self.data_manager.correction_factors):
-            f.render_as_tk_frame(self.scrollable_factor_frame).grid(row=i, column=0, sticky=EW, padx=3, pady=3)
-        self.scrollable_factor_frame.grid_columnconfigure(0, weight=1)
-        if len(self.data_manager.correction_factors) > 0:
-            self.txt_ok_skip.set("OK")
+            f.render_as_tk_frame(self.correction_factor_inner_frame).grid(row=i, column=0, sticky=EW, padx=3, pady=3)
+        self.correction_factor_inner_frame.grid_columnconfigure(0, weight=1)
 
     def add_factor(self):
         name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
@@ -122,6 +141,7 @@ If you have any correction factors, add them here, otherwise, press done to cont
             return
         self.data_manager.add_correction_factor(CorrectionFactor(name, self.remove_a_factor))
         self.redraw_factors()
+        self.txt_done_skip.set(ResponseString.Done)
 
     def remove_a_factor(self):
         # delete the widget
@@ -132,12 +152,14 @@ If you have any correction factors, add them here, otherwise, press done to cont
         for i in reversed(indexes_to_remove):
             del self.data_manager.correction_factors[i]
         self.redraw_factors()
+        if len(self.data_manager.correction_factors) == 0:
+            self.txt_done_skip.set(ResponseString.Skip)
 
-    def ok_skip(self):
-        if self.txt_ok_skip == "OK":
-            self.exit_code = CorrectionFactorFormResponse.Done
+    def done_skip(self):
+        if self.txt_done_skip == ResponseString.Done:
+            self.exit_code = CorrectionFactorSummaryFormResponse.Done
         else:
-            self.exit_code = CorrectionFactorFormResponse.Skip
+            self.exit_code = CorrectionFactorSummaryFormResponse.Skip
         self.grab_release()
         self.destroy()
 
