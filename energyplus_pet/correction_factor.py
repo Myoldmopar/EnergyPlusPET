@@ -10,6 +10,9 @@ class CorrectionFactorType(Enum):
     Replacement = auto()
 
 
+# TODO: Separate the GUI rendering out of here
+
+
 class CorrectionFactor:
     """
     Defines the correction factor information and can return a Tk Frame

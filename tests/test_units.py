@@ -15,7 +15,7 @@ class TestLayer(TestCase):
     def worker_construction(self, value: float, unit: int):
         if self.unit_type is None:
             self.fail("Forgot to call set_unit_type before calling worker_construction")
-        u = self.unit_type(value, unit)
+        u = self.unit_type(value, "dummy name", "dummy description", unit)
         # verifies the interface
         gotten_units = u.get_units()
         self.assertIsInstance(gotten_units, list)
@@ -34,7 +34,7 @@ class TestLayer(TestCase):
     def worker_conversion(self, init_val: float, init_units: int, expected_val: float, places: int):
         if self.unit_type is None:
             self.fail("Forgot to call set_unit_type before calling worker_conversion")
-        u = self.unit_type(init_val, init_units)
+        u = self.unit_type(init_val, "dummy name", "dummy description", init_units)
         u.convert_to_calculation_unit()
         self.assertAlmostEqual(expected_val, u.value, places)
         self.assertEqual(u.calculation_unit(), u.units)

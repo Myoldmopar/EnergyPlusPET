@@ -69,7 +69,6 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
 # {38};{39}!-Cycle Time
 #         """
 
-
     def to_parameter_summary(self) -> str:
         pass
 

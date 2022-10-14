@@ -3,21 +3,20 @@ from enum import Enum, auto
 from typing import List
 
 
-class UnitType(Enum):
-    Power = auto()
-    Flow = auto()
-    Temperature = auto()
-    Dimensionless = auto()
-    Pressure = auto()
-    Length = auto()
-    RotationalSpeed = auto()
-
-
 class BaseUnit:
 
-    def __init__(self, initial_value: float, initial_units: int):
+    def __init__(
+            self, initial_value: float, name: str = "<Unnamed>", description: str = '<...>', initial_units: int = None
+    ):
         self.value = initial_value
-        self.units = initial_units
+        self.name = name
+        self.description = description
+        if initial_units is not None:
+            if initial_units not in self.get_units():
+                print("Error, but this really isn't catching much since we reuse integers...")
+            self.units = initial_units
+        else:
+            self.units = self.calculation_unit()
 
     @abstractmethod
     def get_units(self) -> List[int]: pass
@@ -37,6 +36,31 @@ class BaseUnit:
     @abstractmethod
     def convert_to_calculation_unit(self): pass
 
+    def __str__(self):
+        return f"{self.value} [{self.get_unit_strings()[self.units]}]"
+
+
+class DimensionlessUnits(BaseUnit):
+    Dimensionless = 0
+
+    def get_units(self) -> List[int]:
+        return [DimensionlessUnits.Dimensionless]
+
+    def get_unit_strings(self) -> List[str]:
+        return ["Dimensionless"]
+
+    def calculation_unit(self) -> int:
+        return DimensionlessUnits.Dimensionless
+
+    def base_ip_unit(self) -> int:
+        return DimensionlessUnits.Dimensionless
+
+    def base_si_unit(self) -> int:
+        return DimensionlessUnits.Dimensionless
+
+    def convert_to_calculation_unit(self):
+        return
+
 
 class PowerUnits(BaseUnit):
     Watts = 0
@@ -48,7 +72,7 @@ class PowerUnits(BaseUnit):
         return [PowerUnits.Watts, PowerUnits.Kilowatts, PowerUnits.BTU_hour, PowerUnits.MBTU_hour]
 
     def get_unit_strings(self) -> List[str]:
-        return ["Watts", "Kilowatts", "Btu/hr", "MBtu/hr"]
+        return ["W", "kW", "Btu/hr", "MBtu/hr"]
 
     def calculation_unit(self) -> int:
         return PowerUnits.Kilowatts
@@ -232,3 +256,32 @@ class RotationSpeedUnits(BaseUnit):
         elif self.units == RotationSpeedUnits.RevsPerMinute:
             self.value /= 60.0
         self.units = self.calculation_unit()
+
+
+class UnitType(Enum):
+    Power = auto()
+    Flow = auto()
+    Temperature = auto()
+    Dimensionless = auto()
+    Pressure = auto()
+    Length = auto()
+    RotationalSpeed = auto()
+
+
+def unit_instance_factory(value: float, unit_type: UnitType) -> BaseUnit:
+    if unit_type == UnitType.Power:
+        return PowerUnits(value)
+    elif unit_type == UnitType.Flow:
+        return FlowUnits(value)
+    elif unit_type == UnitType.Temperature:
+        return TempUnits(value)
+    elif unit_type == UnitType.Dimensionless:
+        return DimensionlessUnits(value)
+    elif unit_type == UnitType.Pressure:
+        return PressureUnits(value)
+    elif unit_type == UnitType.Length:
+        return LengthUnits(value)
+    elif unit_type == UnitType.RotationalSpeed:
+        return RotationSpeedUnits(value)
+    else:
+        print("Bad units, what happened?: " + str(unit_type))

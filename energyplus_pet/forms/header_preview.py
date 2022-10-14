@@ -1,4 +1,4 @@
-from tkinter import Toplevel, Button, Frame, Label, HORIZONTAL, TOP, X, StringVar
+from tkinter import Toplevel, Button, Frame, Label, HORIZONTAL, TOP, X
 from tkinter.ttk import Separator
 
 from pyperclip import copy
@@ -20,9 +20,15 @@ class RequiredDataPreviewForm(Toplevel):
                 header_string += f"{h}\n"
         Label(self, text=equipment.name()).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
-        Label(self, text="Data columns listed here\nData can be entered in any common units").pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
+        Label(self, text="Data columns listed here\nData can be entered in any common units").pack(
+            side=TOP, fill=X, expand=False, padx=3, pady=3
+        )
         Label(self, text=self.summary).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
-        Label(self, text="If any data uses correction factors,\n the constant values are entered in tabular form \n and correction factors are separate from tabulated data.").pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
+        Label(
+            self,
+            text="If any data uses correction factors,\n the constant values are entered in tabular form \n and "
+                 "correction factors are separate from tabulated data. "
+        ).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         button_frame = Frame(self)
         Button(button_frame, text="Copy Summary to Clipboard", command=self.copy).grid(row=0, column=0, padx=3, pady=3)
         Button(button_frame, text="Copy CSV to Clipboard", command=self.copy_csv).grid(row=0, column=1, padx=3, pady=3)

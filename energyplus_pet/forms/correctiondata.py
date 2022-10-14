@@ -1,10 +1,11 @@
 from enum import Enum, auto
-from tkinter import Toplevel, Button, Frame, Label, simpledialog, HORIZONTAL, TOP, X, StringVar, \
-    Entry, DoubleVar, OptionMenu, Variable, EW, BooleanVar, Checkbutton, Tk, NSEW, BOTH
+from tkinter import Toplevel, Frame  # containers
+from tkinter import Button, Label, Entry, OptionMenu  # widgets
+from tkinter import HORIZONTAL, TOP, X, EW, BOTH  # appearance attributes
+from tkinter import StringVar, DoubleVar  # dynamic variables
 from tkinter.ttk import Separator
-from tksheet import Sheet
 
-from energyplus_pet.forms.tableview import TableView
+from tksheet import Sheet
 
 
 class DetailedCorrectionExitCode(Enum):
@@ -130,6 +131,7 @@ class DetailedCorrectionFactorForm(Toplevel):
 
 
 if __name__ == "__main__":
+    from tkinter import Tk
     root = Tk()
     d = DetailedCorrectionFactorForm(root)
     root.mainloop()

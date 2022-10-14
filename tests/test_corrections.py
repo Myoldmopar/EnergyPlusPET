@@ -10,7 +10,7 @@ class TestCorrectionFactor(TestCase):
         self.root_tk = Tk()
 
     def test_correction_factor_a(self):
-        c = CorrectionFactor(name="My Correction")
+        c = CorrectionFactor(name="My Correction", remove_callback=lambda: None)
         # verify description returns a string, no need to check contents
         self.assertIsInstance(c.description(), str)
         # check the flag for removal

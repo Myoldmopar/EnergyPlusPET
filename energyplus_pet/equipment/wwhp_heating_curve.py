@@ -1,21 +1,33 @@
 from time import sleep
-from typing import Callable
+from typing import Callable, List
 
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray, ColumnHeader
-from energyplus_pet.units import UnitType
+from energyplus_pet.units import UnitType, BaseUnit, FlowUnits, PowerUnits
 
 
 class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
 
     def __init__(self):
         # need some rated parameters that we get from the user for scaling, reporting, etc.
-        self.rated_load_volume_flow_rate = 0.0
-        self.rated_source_volume_flow_rate = 0.0
-        self.rated_total_capacity = 0.0
-        self.rated_compressor_power = 0.0
+        self.rated_load_volume_flow_rate = FlowUnits(
+            0.0006887, "Rated Load Side Flow Rate",
+            "This is a nominal flow rate value for the load-side of the heat pump"
+        )
+        self.rated_source_volume_flow_rate = FlowUnits(
+            0.0001892, "Rated Source Side Flow Rate",
+            "This is a nominal flow rate value for the source-side of the heat pump"
+        )
+        self.rated_total_capacity = PowerUnits(
+            3.513, "Rated Total Heating Capacity",
+            "This is a nominal value of the load-side heating capacity of the heat pump"
+        )
+        self.rated_compressor_power = PowerUnits(
+            0.900, "Rated Compressor Power Use",
+            "This is a nominal value of the compressor power for this heat pump"
+        )
         # store some individual arrays for each of the input columns
         self.catalog_source_side_inlet_temp = []
         self.catalog_source_side_volume_flow_rate = []
@@ -38,6 +50,14 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
     def name(self) -> str:
         return "Water to Water Heat Pump, Heating Mode, Curve Fit Formulation"
 
+    def required_constant_parameters(self) -> List[BaseUnit]:
+        return [
+            self.rated_load_volume_flow_rate,
+            self.rated_source_volume_flow_rate,
+            self.rated_total_capacity,
+            self.rated_compressor_power
+        ]
+
     def headers(self) -> ColumnHeaderArray:
         return ColumnHeaderArray(
             [
@@ -58,10 +78,10 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
             'Your Coil Source Side Outlet Node',
             'Your Coil Load Side Inlet Node',
             'Your Coil Load Side Outlet Node',
-            self.rated_load_volume_flow_rate,
-            self.rated_source_volume_flow_rate,
-            self.rated_total_capacity,
-            round(self.rated_total_capacity / self.rated_compressor_power, 4),
+            self.rated_load_volume_flow_rate.value,
+            self.rated_source_volume_flow_rate.value,
+            self.rated_total_capacity.value,
+            round(self.rated_total_capacity.value / self.rated_compressor_power.value, 4),
         ]
         fields.extend(self.c1)
         fields.extend(self.c1)
@@ -87,7 +107,7 @@ HeatPump:WaterToWater:EquationFit:Heating,
 {32},{33}!-Heating Compressor Power Coefficient 3
 {34},{35}!-Heating Compressor Power Coefficient 4
 {36},{37}!-Heating Compressor Power Coefficient 5
-{38};{39}!-Cycle Time        
+{38};{39}!-Cycle Time
         """
         return self.fill_eplus_object_format(fields, form)
 
@@ -110,10 +130,10 @@ Subscript _#: Coefficient #
 **End Governing Equations**
 
 **Begin Reporting Parameters**
-Rated Load-side Heating Capacity: {self.rated_total_capacity} kW
-Rated Heating Power Consumption: {self.rated_compressor_power} kW
-Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate} m3/s
-Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate} m3/s
+Rated Load-side Heating Capacity: {self.rated_total_capacity}
+Rated Heating Power Consumption: {self.rated_compressor_power}
+Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate}
+Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
 """
         for i, c in enumerate(self.c1):
             output += f"Heating Capacity Coefficient HC_{i + 1}: {round(c, 4)}\n"
@@ -164,6 +184,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate} m3/
 
 if __name__ == "__main__":
     w = WaterToWaterHeatPumpHeatingCurveFit()
-    w.rated_compressor_power = 100.0
+    w.rated_compressor_power.value = 100.0
     print(w.to_eplus_idf_object())
     print(w.to_parameter_summary())

@@ -4,6 +4,7 @@ from typing import Callable, List
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
+from energyplus_pet.units import BaseUnit
 
 
 class BaseEquipment:
@@ -16,6 +17,9 @@ class BaseEquipment:
 
     @abstractmethod
     def headers(self) -> ColumnHeaderArray: pass
+
+    @abstractmethod
+    def required_constant_parameters(self) -> List[BaseUnit]: pass
 
     @abstractmethod
     def to_eplus_idf_object(self) -> str: pass
