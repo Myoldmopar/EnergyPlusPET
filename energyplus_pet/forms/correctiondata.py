@@ -130,8 +130,8 @@ class DetailedCorrectionFactorForm(Toplevel):
         self.destroy()
 
 
-if __name__ == "__main__":
-    from tkinter import Tk
-    root = Tk()
-    d = DetailedCorrectionFactorForm(root)
-    root.mainloop()
+# if __name__ == "__main__":
+#     from tkinter import Tk
+#     root = Tk()
+#     d = DetailedCorrectionFactorForm(root)
+#     root.mainloop()

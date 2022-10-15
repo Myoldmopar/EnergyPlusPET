@@ -36,7 +36,7 @@ class BaseUnit:
     @abstractmethod
     def convert_to_calculation_unit(self): pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.value} [{self.get_unit_strings()[self.units]}]"
 
 
@@ -284,4 +284,4 @@ def unit_instance_factory(value: float, unit_type: UnitType) -> BaseUnit:
     elif unit_type == UnitType.RotationalSpeed:
         return RotationSpeedUnits(value)
     else:
-        print("Bad units, what happened?: " + str(unit_type))
+        raise Exception(f"Bad unit_type input sent to unit_instance_factory: \"{str(unit_type)}\", aborting.")

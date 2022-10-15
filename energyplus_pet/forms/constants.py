@@ -6,7 +6,6 @@ from typing import Callable
 
 from energyplus_pet.units import BaseUnit
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
 
 
 class ConstantParameterEntryWidget(Frame):
@@ -109,10 +108,11 @@ class ConstantParameterEntryForm(Toplevel):
     #     ErrorSignal.SetError(txt, "")
     # End Sub
 
-
-if __name__ == "__main__":
-    from tkinter import Tk
-    tk = Tk()
-    e = WaterToWaterHeatPumpHeatingCurveFit()
-    f = ConstantParameterEntryForm(tk, e)
-    tk.mainloop()
+#
+# if __name__ == "__main__":
+#     from tkinter import Tk
+#     from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+#     tk = Tk()
+#     e = WaterToWaterHeatPumpHeatingCurveFit()
+#     f = ConstantParameterEntryForm(tk, e)
+#     tk.mainloop()

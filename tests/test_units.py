@@ -1,7 +1,8 @@
 from typing import Type, Union
 from unittest import TestCase
 
-from energyplus_pet.units import PowerUnits, FlowUnits, TempUnits, PressureUnits, LengthUnits, RotationSpeedUnits
+from energyplus_pet.units import (PowerUnits, FlowUnits, TempUnits, PressureUnits, LengthUnits, RotationSpeedUnits,
+                                  unit_instance_factory, UnitType, DimensionlessUnits)
 
 
 class TestLayer(TestCase):
@@ -27,6 +28,7 @@ class TestLayer(TestCase):
         self.assertIsInstance(u.calculation_unit(), int)
         self.assertIsInstance(u.base_ip_unit(), int)
         self.assertIsInstance(u.base_si_unit(), int)
+        self.assertIsInstance(str(u), str)  # just exercises the __str__ function and makes sure it returns a string
         # verifies construction and members are set up properly
         self.assertEqual(value, u.value)
         self.assertEqual(unit, u.units)
@@ -98,6 +100,21 @@ class TestRotationSpeedUnits(TestLayer):
     def test_rotation_speed_units(self):
         unit_type = RotationSpeedUnits
         self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.RevsPerSecond)
         self.worker_conversion(1.0, unit_type.RevsPerSecond, 1.0, 6)
         self.worker_conversion(1.0, unit_type.RevsPerMinute, 0.01666, 4)
         self.worker_conversion(1.0, unit_type.RadiansPerSecond, 0.159154, 4)
+
+
+class TestUnitFactory(TestCase):
+    def test_all_types(self):
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Power), PowerUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Flow), FlowUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Temperature), TempUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Dimensionless), DimensionlessUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Pressure), PressureUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.Length), LengthUnits)
+        self.assertIsInstance(unit_instance_factory(0.0, UnitType.RotationalSpeed), RotationSpeedUnits)
+        with self.assertRaises(Exception):
+            # noinspection PyTypeChecker
+            unit_instance_factory(0.0, 42828)  # purposefully passing an invalid unit type here

@@ -181,9 +181,9 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
     def generate_error_plot(self):
         pass
 
-
-if __name__ == "__main__":
-    w = WaterToWaterHeatPumpHeatingCurveFit()
-    w.rated_compressor_power.value = 100.0
-    print(w.to_eplus_idf_object())
-    print(w.to_parameter_summary())
+#
+# if __name__ == "__main__":
+#     w = WaterToWaterHeatPumpHeatingCurveFit()
+#     w.rated_compressor_power.value = 100.0
+#     print(w.to_eplus_idf_object())
+#     print(w.to_parameter_summary())
