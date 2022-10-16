@@ -16,7 +16,7 @@ from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.manager import EquipmentFactory
 from energyplus_pet.equipment.equip_types import EquipType, EquipTypeUniqueStrings
-from energyplus_pet.forms.corrections import CorrectionFactorSummaryForm, CorrectionFactorSummaryFormResponse
+from energyplus_pet.forms.correction_summary import CorrectionFactorSummaryForm
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
 
 
@@ -30,7 +30,7 @@ class EnergyPlusPetWindow(Tk):
         """
         super().__init__()
 
-        # a few minimal constants here
+        # a few minimal constants here, these could be enums, but it's more than needed
         self.output_type_idf = 'IDF'
         self.output_type_epjson = 'EPJSON'
         self.output_type_parameter = 'PARAMS'
@@ -52,7 +52,8 @@ class EnergyPlusPetWindow(Tk):
 
         # build out the form and specify a minimum size, which may not be uniform across platforms
         self._build_gui()
-        self.minsize(1000, 410)
+        self.update()
+        self.minsize(self.winfo_width(), self.winfo_height())
 
         # set up some important member variables
         self.full_data_set = None
@@ -62,8 +63,8 @@ class EnergyPlusPetWindow(Tk):
         self.thread_running = False
 
         # window setup operations
-        self.update_status("Program Initialized")
-        self.set_button_status()
+        self.update_status_bar("Program Initialized")
+        self.refresh_gui_state()
 
     def check_queue(self):
         while True:
@@ -204,7 +205,7 @@ class EnergyPlusPetWindow(Tk):
         ).pack(
             side=TOP, anchor=W, padx=3, pady=3
         )
-        Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
         Checkbutton(
             container, text="Make Data Comparison Plot", variable=self.var_data_plot, onvalue=1, offvalue=0
         ).pack(
@@ -215,14 +216,14 @@ class EnergyPlusPetWindow(Tk):
         ).pack(
             side=TOP, anchor=W, padx=3, pady=3
         )
-        Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
         self.button_engage = Button(container, text='Engage Equipment Type', command=self.engage)
-        self.button_engage.pack(side=TOP, padx=3, pady=3)
+        self.button_engage.pack(side=TOP, padx=3, pady=3, fill=X)
         self.button_preview = Button(container, text="Required Data Description", command=self.preview_data)
-        self.button_preview.pack(side=TOP, padx=3, pady=3)
+        self.button_preview.pack(side=TOP, padx=3, pady=3, fill=X)
         self.button_catalog = Button(container, text="Catalog Data Wizard", command=self.catalog_data_wizard)
-        self.button_catalog.pack(side=TOP, padx=3, pady=3)
-        Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
+        self.button_catalog.pack(side=TOP, padx=3, pady=3, fill=X)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
         self.button_create = Button(container, text="Create Parameters", command=self.start_parameter_thread)
         self.button_create.pack(side=TOP, padx=3, pady=3)
         Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
@@ -244,7 +245,7 @@ class EnergyPlusPetWindow(Tk):
         self.output_box.insert(END, '\n'.join(["BLAH" * 12] * 40))
         horizontal_scroller.config(command=self.output_box.xview)
 
-    def set_button_status(self):
+    def refresh_gui_state(self):
         if self.thread_running:
             self.button_engage['state'] = DISABLED
             self.button_catalog['state'] = DISABLED
@@ -308,7 +309,7 @@ class EnergyPlusPetWindow(Tk):
         if not self.catalog_data_in_place:
             # then we are just selecting a new equip type, select it and move on
             self.selected_equip_instance = EquipmentFactory.factory(potential_new_equip_type)
-            self.set_button_status()
+            self.refresh_gui_state()
             return
         if potential_new_equip_type == self.selected_equip_instance.this_type():
             messagebox.showinfo("Type Issue", "This equipment type was already engaged, not making any changes")
@@ -321,8 +322,8 @@ class EnergyPlusPetWindow(Tk):
             if response:
                 self.catalog_data_in_place = False
                 self.full_data_set = None
-                self.update_status(f"New Equipment Type Selected ({potential_new_equip_type})")
-            self.set_button_status()
+                self.update_status_bar(f"New Equipment Type Selected ({potential_new_equip_type})")
+            self.refresh_gui_state()
 
     def catalog_data_wizard(self):
         """
@@ -346,15 +347,15 @@ class EnergyPlusPetWindow(Tk):
         self.catalog_data_manager.add_base_data('Foo:Bar')
         self.catalog_data_in_place = True
         self.full_data_set = self.catalog_data_manager.process()
-        self.set_button_status()
+        self.refresh_gui_state()
 
     def get_correction_factor_summaries(self) -> bool:
         cdf = CorrectionFactorSummaryForm(self, self.catalog_data_manager, self.selected_equip_instance)
         self.wait_window(cdf)
-        if cdf.exit_code == CorrectionFactorSummaryFormResponse.Cancel:
+        if cdf.exit_code == CorrectionFactorSummaryForm.ExitCode.Cancel:
             # in the original code, this would set CorrectionsExist to false, not sure that's right
             return False  # correction data form was cancelled, just move on
-        elif cdf.exit_code == CorrectionFactorSummaryFormResponse.Error:
+        elif cdf.exit_code == CorrectionFactorSummaryForm.ExitCode.Error:
             return False  # if an error occurred, it should have been reported, just abort the data process
         else:
             return True  # done/skip indicates the data manager has now gotten any/all updated correction summaries
@@ -363,12 +364,12 @@ class EnergyPlusPetWindow(Tk):
         self.var_progress.set(0)
         # set buttons to disabled while it runs
         self.thread_running = True
-        self.set_button_status()
+        self.refresh_gui_state()
         thd = Thread(target=self.generate_parameters, args=(self.selected_equip_instance, self.catalog_data_manager))
         thd.daemon = True
         thd.start()
 
-    def update_status(self, extra_message: str = ''):
+    def update_status_bar(self, extra_message: str = ''):
         status_clause = ''
         if extra_message:
             status_clause = f"  Status Update: {extra_message}"
@@ -391,7 +392,7 @@ class EnergyPlusPetWindow(Tk):
 
     def handler_background_thread_done(self, response: str):
         self.thread_running = False
-        self.set_button_status()
+        self.refresh_gui_state()
         self.output_box.delete('1.0', END)
         self.output_box.insert(END, response)
 

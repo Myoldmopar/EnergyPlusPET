@@ -1,25 +1,15 @@
 from enum import Enum, auto
 from functools import partial
 from platform import system
-from tkinter import Toplevel, Button, Frame, Label, simpledialog, HORIZONTAL, TOP, X, StringVar, BOTH, Canvas, \
-    Scrollbar, VERTICAL, NW, LEFT, Y, Listbox, EW, RIGHT
+from tkinter import Toplevel, Frame, Canvas, simpledialog
+from tkinter import Button, Label, Listbox, Scrollbar
+from tkinter import HORIZONTAL, TOP, X, BOTH, VERTICAL, NW, LEFT, Y, EW, RIGHT
+from tkinter import StringVar
 from tkinter.ttk import Separator
 
 from energyplus_pet.correction_factor import CorrectionFactor
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
-
-
-class CorrectionFactorSummaryFormResponse(Enum):
-    Cancel = auto()
-    Done = auto()
-    Skip = auto()
-    Error = auto()
-
-
-class ResponseString:
-    Done = 'Done'
-    Skip = 'Skip'
 
 
 class Event:
@@ -32,21 +22,38 @@ class Event:
 
 
 class CorrectionFactorSummaryForm(Toplevel):
+    class ExitCode(Enum):
+        Cancel = auto()
+        Done = auto()
+        Skip = auto()
+        Error = auto()
+
     def __init__(self, parent_window, data_manager: CatalogDataManager, equipment: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
         # store arguments for manipulation here, these are passed by assignment, in this case "by reference"
         self.data_manager = data_manager
         self.equipment = equipment
         # initialize an exit code so that the main form knows how this window closed
-        self.exit_code = CorrectionFactorSummaryFormResponse.Error
-        # create all the objects
+        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error
+        self.text_done = 'Done'
+        self.text_skip = 'Skip'
+        # create the gui
+        self._build_gui()
+        # draw factors, in case there already are any
+        self.redraw_factors()
+        # finalize UI operations
+        self.wait_visibility()
+        self.grab_set()
+        self.transient(parent_window)
+
+    def _build_gui(self):
         lbl = Label(self, text="""In order to estimate parameters, all data categories should have at least two values.
-If all values are constant, a curve fit cannot be generated.
-It is common for manufacturers to only give a constant value for certain data.
-This is typically entering temperatures or flow rates.
-They will then give correction factor data in order to modify this value.
-These correction factors can be new flow rate/temperature values, or multipliers from the base values.
-If you have any correction factors, add them here, otherwise, press done to continue.""")
+        If all values are constant, a curve fit cannot be generated.
+        It is common for manufacturers to only give a constant value for certain data.
+        This is typically entering temperatures or flow rates.
+        They will then give correction factor data in order to modify this value.
+        These correction factors can be new flow rate/temperature values, or multipliers from the base values.
+        If you have any correction factors, add them here, otherwise, press done to continue.""")
         s_0 = Separator(self, orient=HORIZONTAL)
         #
         correction_factor_outer_frame = Frame(self)
@@ -74,7 +81,7 @@ If you have any correction factors, add them here, otherwise, press done to cont
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
         btn_add = Button(button_frame, text="Add Factor", command=self.add_factor)
-        self.txt_done_skip = StringVar(value=ResponseString.Skip)
+        self.txt_done_skip = StringVar(value=self.text_skip)
         btn_ok_skip = Button(button_frame, textvariable=self.txt_done_skip, command=self.done_skip)
         btn_cancel = Button(button_frame, text="Cancel", command=self.cancel)
         # pack everything
@@ -90,12 +97,6 @@ If you have any correction factors, add them here, otherwise, press done to cont
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.grid_columnconfigure(2, weight=1)
-        # draw factors, in case there already are any
-        self.redraw_factors()
-        # finalize UI operations
-        self.wait_visibility()
-        self.grab_set()
-        self.transient(parent_window)
 
     def mouse_wheel(self, event, scroll):
         amount_to_scroll_canvas = int(scroll)
@@ -141,7 +142,7 @@ If you have any correction factors, add them here, otherwise, press done to cont
             return
         self.data_manager.add_correction_factor(CorrectionFactor(name, self.remove_a_factor))
         self.redraw_factors()
-        self.txt_done_skip.set(ResponseString.Done)
+        self.txt_done_skip.set(self.text_done)
 
     def remove_a_factor(self):
         # delete the widget
@@ -153,13 +154,13 @@ If you have any correction factors, add them here, otherwise, press done to cont
             del self.data_manager.correction_factors[i]
         self.redraw_factors()
         if len(self.data_manager.correction_factors) == 0:
-            self.txt_done_skip.set(ResponseString.Skip)
+            self.txt_done_skip.set(self.text_skip)
 
     def done_skip(self):
-        if self.txt_done_skip == ResponseString.Done:
-            self.exit_code = CorrectionFactorSummaryFormResponse.Done
+        if self.txt_done_skip == self.text_done:
+            self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
         else:
-            self.exit_code = CorrectionFactorSummaryFormResponse.Skip
+            self.exit_code = CorrectionFactorSummaryForm.ExitCode.Skip
         self.grab_release()
         self.destroy()
 
