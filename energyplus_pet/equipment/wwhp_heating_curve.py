@@ -46,7 +46,7 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
         self.predicted_source_side_heat_absorption = []
 
     def this_type(self) -> EquipType:
-        return EquipType.WAHP_Heating_CurveFit
+        return EquipType.WWHP_Heating_CurveFit
 
     def name(self) -> str:
         return "Water to Water Heat Pump, Heating Mode, Curve Fit Formulation"
@@ -113,7 +113,7 @@ HeatPump:WaterToWater:EquationFit:Heating,
         return self.fill_eplus_object_format(fields, form)
 
     def to_parameter_summary(self) -> str:
-        output = f"""
+        output = f"""{self.name}
 **Begin Nomenclature**
 HC: Heating Capacity
 HP: Heating Power Consumption

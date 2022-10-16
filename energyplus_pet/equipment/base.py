@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Callable, List
 
-from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
 from energyplus_pet.units import BaseUnit
@@ -32,7 +31,7 @@ class BaseEquipment:
 
     @abstractmethod
     def generate_parameters(
-            self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
+            self, data_manager, cb_progress_initialize: Callable,
             cb_progress_increment: Callable, cb_progress_done: Callable
     ): pass
 
@@ -43,7 +42,7 @@ class BaseEquipment:
     def generate_error_plot(self): pass
 
     @staticmethod
-    def fill_eplus_object_format(fields: List[str], form: str):
+    def fill_eplus_object_format(fields: List[str], form: str) -> str:
         preferred_spaces = 16
         hanging_indent_string = " "*4
         pads = []

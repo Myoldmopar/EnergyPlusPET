@@ -22,6 +22,7 @@ class CatalogDataManager:
         return result
 
     def reset(self):
-        pass
+        self.correction_factors.clear()
+        self.base_data = ''
 
     # TODO: Move catalog data in place checks and such into here

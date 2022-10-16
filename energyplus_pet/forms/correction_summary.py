@@ -14,7 +14,7 @@ from energyplus_pet.equipment.base import BaseEquipment
 
 class Event:
     LinuxWheelUp = '<Button-4>'
-    LinuxWheelDown = '<Button-4>'
+    LinuxWheelDown = '<Button-5>'
     WindowsWheelEvent = '<MouseWheel>'
     Configure = '<Configure>'
     WidgetEnter = '<Enter>'
@@ -140,7 +140,7 @@ class CorrectionFactorSummaryForm(Toplevel):
         name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
         if name is None:
             return
-        self.data_manager.add_correction_factor(CorrectionFactor(name, self.remove_a_factor))
+        self.data_manager.add_correction_factor(CorrectionFactor(name, self.equipment, self.remove_a_factor))
         self.redraw_factors()
         self.txt_done_skip.set(self.text_done)
 
@@ -158,6 +158,8 @@ class CorrectionFactorSummaryForm(Toplevel):
 
     def done_skip(self):
         if self.txt_done_skip == self.text_done:
+            for cf in self.data_manager.correction_factors:
+                cf.gather()
             self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
         else:
             self.exit_code = CorrectionFactorSummaryForm.ExitCode.Skip
