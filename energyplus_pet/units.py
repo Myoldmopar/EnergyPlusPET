@@ -12,7 +12,7 @@ class BaseUnit:
         self.name = name
         self.description = description
         if initial_units is not None:
-            if initial_units not in self.get_units():
+            if initial_units not in self.get_units():  # pragma: no cover -- rethink this approach, try enums again
                 print("Error, but this really isn't catching much since we reuse integers...")
             self.units = initial_units
         else:
