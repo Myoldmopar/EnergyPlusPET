@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from pathlib import Path
 from queue import Queue
 from threading import Thread
@@ -13,34 +12,12 @@ from tkinter.ttk import LabelFrame, Progressbar, Treeview, Radiobutton, Checkbut
 from webbrowser import open as browser_open
 
 from energyplus_pet import NICE_NAME, VERSION
-from energyplus_pet.calculator import ParameterCalculator
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.manager import EquipmentFactory
-from energyplus_pet.equipment.equip_types import EquipType
-from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+from energyplus_pet.equipment.equip_types import EquipType, EquipTypeUniqueStrings
 from energyplus_pet.forms.corrections import CorrectionFactorSummaryForm, CorrectionFactorSummaryFormResponse
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
-
-
-class TreeViewEquipIDMaps:
-    def __init__(self):
-        self.map = {EquipType.InvalidType: "[INVALID]"}
-
-    def add_to_map(self, equipment_type: EquipType, iid: str) -> None:
-        self.map[equipment_type] = iid
-
-    def check_iid(self, iid: str) -> EquipType:
-        for k, v in self.map.items():
-            if v == iid:
-                return k
-        return EquipType.InvalidType
-
-
-class OutputType(Enum):
-    IDFObject = auto()
-    EpJSONObject = auto()
-    ParameterList = auto()
 
 
 class EnergyPlusPetWindow(Tk):
@@ -52,6 +29,11 @@ class EnergyPlusPetWindow(Tk):
         This window is an instance of a tk.Tk object
         """
         super().__init__()
+
+        # a few minimal constants here
+        self.output_type_idf = 'IDF'
+        self.output_type_epjson = 'EPJSON'
+        self.output_type_parameter = 'PARAMS'
 
         # set some basic program information like title and an icon
         self.program_name = NICE_NAME
@@ -77,7 +59,7 @@ class EnergyPlusPetWindow(Tk):
         self.selected_equip_instance: BaseEquipment = BaseEquipment()  # nothing for now
         self.catalog_data_in_place = False
         self.catalog_data_manager = CatalogDataManager()
-        self.calculator = None
+        self.thread_running = False
 
         # window setup operations
         self.update_status("Program Initialized")
@@ -98,7 +80,7 @@ class EnergyPlusPetWindow(Tk):
         Creates and initializes all the Tk.Variable instances used in the GUI for two-way communication
         :return:
         """
-        self.var_output_type = StringVar(value=OutputType.IDFObject.name)
+        self.var_output_type = StringVar(value=self.output_type_idf)
         self.var_data_plot = IntVar(value=1)
         self.var_error_plot = IntVar(value=1)
         self.var_progress = IntVar(value=0)
@@ -110,7 +92,6 @@ class EnergyPlusPetWindow(Tk):
         self._build_menu()
 
         # create an instance of the equipment id/tree mapping and then build the tree GUI contents
-        self.equip_ids = TreeViewEquipIDMaps()
         label_frame_equip_type = LabelFrame(self, text="Equipment Type")
         self._build_treeview(label_frame_equip_type)
 
@@ -153,50 +134,73 @@ class EnergyPlusPetWindow(Tk):
         self.tree_equip.column('#0', stretch=False)
         equip_type_scrollbar.config(command=self.tree_equip.yview)
         # eventually use a defined dictionary somewhere for the tree items and keywords
-        tree_root_hp = self.tree_equip.insert(parent='', index='end', text="Heat Pumps", open=True)
-        tree_branch_wah = self.tree_equip.insert(
-            parent=tree_root_hp, index='end', text="Water to Air Heating", open=True  # leave it open as the default
+        tree_root_hp = self.tree_equip.insert(
+            parent='', index='end', text="Heat Pumps", open=True,
         )
-        leaf = self.tree_equip.insert(parent=tree_branch_wah, index='end', text="Curve Fit")
-        self.equip_ids.add_to_map(EquipType.WAHP_Heating_CurveFit, leaf)
-        initial_focus = leaf
-        leaf = self.tree_equip.insert(parent=tree_branch_wah, index='end', text="Parameter Estimation")
-        self.equip_ids.add_to_map(EquipType.WAHP_Heating_PE, leaf)
-        tree_branch_wac = self.tree_equip.insert(parent=tree_root_hp, index='end', text="Water to Air Cooling")
-        leaf = self.tree_equip.insert(parent=tree_branch_wac, index='end', text="Curve Fit")
-        self.equip_ids.add_to_map(EquipType.WAHP_Cooling_CurveFit, leaf)
-        leaf = self.tree_equip.insert(parent=tree_branch_wac, index='end', text="Parameter Estimation")
-        self.equip_ids.add_to_map(EquipType.WAHP_Cooling_PE, leaf)
-        tree_branch_wwh = self.tree_equip.insert(parent=tree_root_hp, index='end', text="Water to Water Heating")
-        leaf = self.tree_equip.insert(parent=tree_branch_wwh, index='end', text="Curve Fit")
-        self.equip_ids.add_to_map(EquipType.WWHP_Heating_CurveFit, leaf)
-        tree_branch_wwc = self.tree_equip.insert(parent=tree_root_hp, index='end', text="Water to Water Cooling")
-        leaf = self.tree_equip.insert(parent=tree_branch_wwc, index='end', text="Curve Fit")
-        self.equip_ids.add_to_map(EquipType.WWHP_Cooling_CurveFit, leaf)
-        tree_root_pumps = self.tree_equip.insert(parent='', index='end', text='Pumps', open=True)
-        tree_branch_const_pump = self.tree_equip.insert(parent=tree_root_pumps, index='end', text="Constant Speed Pump")
-        leaf = self.tree_equip.insert(parent=tree_branch_const_pump, index='end', text='Non-Dimensional')
-        self.equip_ids.add_to_map(EquipType.Pump_ConstSpeed_ND, leaf)
+        tree_branch_wah = self.tree_equip.insert(
+            parent=tree_root_hp, index='end', text="Water to Air Heating", open=True,
+        )
+        initial_focus = self.tree_equip.insert(
+            parent=tree_branch_wah, index='end', text="Curve Fit",
+            tags=EquipTypeUniqueStrings.WAHP_Heating_CurveFit)
+        self.tree_equip.insert(
+            parent=tree_branch_wah, index='end', text="Parameter Estimation",
+            tags=EquipTypeUniqueStrings.WAHP_Heating_PE
+        )
+        tree_branch_wac = self.tree_equip.insert(
+            parent=tree_root_hp, index='end', text="Water to Air Cooling", open=True,
+        )
+        self.tree_equip.insert(
+            parent=tree_branch_wac, index='end', text="Curve Fit",
+            tags=EquipTypeUniqueStrings.WAHP_Cooling_CurveFit
+        )
+        self.tree_equip.insert(
+            parent=tree_branch_wac, index='end', text="Parameter Estimation",
+            tags=EquipTypeUniqueStrings.WAHP_Cooling_PE
+        )
+        tree_branch_wwh = self.tree_equip.insert(
+            parent=tree_root_hp, index='end', text="Water to Water Heating", open=True,
+        )
+        self.tree_equip.insert(
+            parent=tree_branch_wwh, index='end', text="Curve Fit",
+            tags=EquipTypeUniqueStrings.WWHP_Heating_CurveFit
+        )
+        tree_branch_wwc = self.tree_equip.insert(
+            parent=tree_root_hp, index='end', text="Water to Water Cooling", open=True,
+        )
+        self.tree_equip.insert(
+            parent=tree_branch_wwc, index='end', text="Curve Fit",
+            tags=EquipTypeUniqueStrings.WWHP_Cooling_CurveFit
+        )
+        tree_root_pumps = self.tree_equip.insert(
+            parent='', index='end', text='Pumps', open=True,
+        )
+        tree_branch_const_pump = self.tree_equip.insert(
+            parent=tree_root_pumps, index='end', text="Constant Speed Pump", open=True,
+        )
+        self.tree_equip.insert(
+            parent=tree_branch_const_pump, index='end', text='Non-Dimensional',
+            tags=EquipTypeUniqueStrings.Pump_ConstSpeed_ND
+        )
         # COMPONENT_EXTENSION 08: Add more nodes to the treeview based on the type added
         self.tree_equip.pack(side=LEFT, padx=3, pady=3, fill=BOTH, expand=True)
         equip_type_scrollbar.pack(side=RIGHT, padx=0, pady=3, fill=Y, expand=False)
-
         self.tree_equip.focus(initial_focus)
         self.tree_equip.selection_set(initial_focus)
 
     def _build_controls(self, container):
         Radiobutton(
-            container, text="IDF Object", value=OutputType.IDFObject.name, variable=self.var_output_type
+            container, text="IDF Object", value=self.output_type_idf, variable=self.var_output_type
         ).pack(
             side=TOP, anchor=W, padx=3, pady=3
         )
         Radiobutton(
-            container, text="EpJSON Object", value=OutputType.EpJSONObject.name, variable=self.var_output_type
+            container, text="EpJSON Object", value=self.output_type_epjson, variable=self.var_output_type
         ).pack(
             side=TOP, anchor=W, padx=3, pady=3
         )
         Radiobutton(
-            container, text="Parameter List", value=OutputType.ParameterList.name, variable=self.var_output_type
+            container, text="Parameter List", value=self.output_type_parameter, variable=self.var_output_type
         ).pack(
             side=TOP, anchor=W, padx=3, pady=3
         )
@@ -212,13 +216,14 @@ class EnergyPlusPetWindow(Tk):
             side=TOP, anchor=W, padx=3, pady=3
         )
         Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
-        Button(container, text='Engage Equipment Type', command=self.engage).pack(side=TOP, padx=3, pady=3)
+        self.button_engage = Button(container, text='Engage Equipment Type', command=self.engage)
+        self.button_engage.pack(side=TOP, padx=3, pady=3)
         self.button_preview = Button(container, text="Required Data Description", command=self.preview_data)
         self.button_preview.pack(side=TOP, padx=3, pady=3)
         self.button_catalog = Button(container, text="Catalog Data Wizard", command=self.catalog_data_wizard)
         self.button_catalog.pack(side=TOP, padx=3, pady=3)
         Separator(container, orient='horizontal').pack(fill='x', padx=3, pady=3)
-        self.button_create = Button(container, text="Create Parameters", command=self.create_parameters)
+        self.button_create = Button(container, text="Create Parameters", command=self.start_parameter_thread)
         self.button_create.pack(side=TOP, padx=3, pady=3)
         Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
         self.progress = Progressbar(container, variable=self.var_progress)
@@ -240,11 +245,18 @@ class EnergyPlusPetWindow(Tk):
         horizontal_scroller.config(command=self.output_box.xview)
 
     def set_button_status(self):
-        if self.selected_equip_instance is None or self.selected_equip_instance.this_type() == EquipType.InvalidType:
+        if self.thread_running:
+            self.button_engage['state'] = DISABLED
+            self.button_catalog['state'] = DISABLED
+            self.button_create['state'] = DISABLED
+            self.button_preview['state'] = DISABLED
+        elif self.selected_equip_instance is None or self.selected_equip_instance.this_type() == EquipType.InvalidType:
+            self.button_engage['state'] = ACTIVE
             self.button_catalog['state'] = DISABLED
             self.button_create['state'] = DISABLED
             self.button_preview['state'] = DISABLED
         else:
+            self.button_engage['state'] = ACTIVE
             self.button_catalog['state'] = ACTIVE
             self.button_preview['state'] = ACTIVE
             if self.catalog_data_in_place:
@@ -271,7 +283,7 @@ class EnergyPlusPetWindow(Tk):
 
     def save_data_to_file(self):
         file_path = filedialog.asksaveasfilename(parent=self, defaultextension=".csv", confirmoverwrite=True)
-        if file_path is None:
+        if file_path is None or file_path == ():
             return
         try:
             with open(file_path, 'w') as f:
@@ -287,10 +299,12 @@ class EnergyPlusPetWindow(Tk):
         :return: Nothing
         """
         cur_item = self.tree_equip.focus()
-        potential_new_equip_type = self.equip_ids.check_iid(cur_item)
-        if potential_new_equip_type == EquipType.InvalidType:
+        node_tags = self.tree_equip.item(cur_item, 'tags')  # this always either returns '' or ('tag_contents',)
+        if node_tags == '':
             messagebox.showwarning("Type Issue", "Make sure to select one of the child types, not a parent tree node")
             return
+        node_tag = node_tags[0]
+        potential_new_equip_type = EquipTypeUniqueStrings.get_equip_type_from_unique_string(node_tag)
         if not self.catalog_data_in_place:
             # then we are just selecting a new equip type, select it and move on
             self.selected_equip_instance = EquipmentFactory.factory(potential_new_equip_type)
@@ -302,7 +316,7 @@ class EnergyPlusPetWindow(Tk):
         else:
             response = messagebox.askyesno(
                 "Type Issue",
-                "New type selected, but catalog data ia already present. Would you like to clear the old data?"
+                "New type selected, but catalog data is already present. Would you like to clear the old data?"
             )
             if response:
                 self.catalog_data_in_place = False
@@ -345,10 +359,12 @@ class EnergyPlusPetWindow(Tk):
         else:
             return True  # done/skip indicates the data manager has now gotten any/all updated correction summaries
 
-    def create_parameters(self):
+    def start_parameter_thread(self):
         self.var_progress.set(0)
         # set buttons to disabled while it runs
-        thd = Thread(target=self.long_runner, args=(self.catalog_data_manager,))  # timer thread
+        self.thread_running = True
+        self.set_button_status()
+        thd = Thread(target=self.generate_parameters, args=(self.selected_equip_instance, self.catalog_data_manager))
         thd.daemon = True
         thd.start()
 
@@ -361,12 +377,11 @@ class EnergyPlusPetWindow(Tk):
         else:
             self.var_status.set(f"Catalog Data is NOT READY.{status_clause}")
 
-    def handler_background_thread_update(self):
-        value = self.var_progress.get() + 1
-        self.var_progress.set(value)
+    def handler_background_thread_increment(self):
+        self.var_progress.set(self.var_progress.get() + 1)
 
     def callback_background_thread_increment(self):
-        self.gui_queue.put(self.handler_background_thread_update)
+        self.gui_queue.put(self.handler_background_thread_increment)
 
     def handler_background_thread_starting(self, initial_progress_value: int):
         self.progress['maximum'] = initial_progress_value
@@ -375,29 +390,29 @@ class EnergyPlusPetWindow(Tk):
         self.gui_queue.put(lambda: self.handler_background_thread_starting(initial_progress_value))
 
     def handler_background_thread_done(self, response: str):
+        self.thread_running = False
+        self.set_button_status()
         self.output_box.delete('1.0', END)
         self.output_box.insert(END, response)
 
     def callback_background_thread_done(self, response: str):
         self.gui_queue.put(lambda: self.handler_background_thread_done(response))
 
-    def long_runner(self, full_catalog_data_manager: CatalogDataManager) -> None:
-        e = WaterToWaterHeatPumpHeatingCurveFit()
-        e.generate_parameters(
-            self.catalog_data_manager, self.callback_background_thread_starting,
-            self.callback_background_thread_increment, self.callback_background_thread_done
-        )
-        summary = e.to_parameter_summary()
-        # self.callback_background_thread_starting
-        # total_seconds = 1
-        # num_iterations = 100
-        # for x in range(num_iterations):
-        #     self.callback_background_thread_increment(x)
-        #     print(x)
-        #     sleep(total_seconds / num_iterations)
-        # access stuff on self.calculator
-        self.calculator = ParameterCalculator(full_catalog_data_manager)
-        self.callback_background_thread_done(self.calculator.output() + summary)
+    def generate_parameters(self, equip_instance: BaseEquipment, data: CatalogDataManager) -> None:
+        try:
+            equip_instance.generate_parameters(
+                data, self.callback_background_thread_starting,
+                self.callback_background_thread_increment, self.callback_background_thread_done
+            )
+        except Exception as e:  # any type of exception
+            self.callback_background_thread_done("Error occurred! " + str(e))
+            return
+        if self.var_output_type.get() == self.output_type_idf:
+            self.callback_background_thread_done(equip_instance.to_eplus_idf_object())
+        elif self.var_output_type.get() == self.output_type_parameter:
+            self.callback_background_thread_done(equip_instance.to_parameter_summary())
+        elif self.var_output_type.get() == self.output_type_epjson:
+            self.callback_background_thread_done(equip_instance.to_eplus_epjson_object())
 
     def run(self) -> None:
         """

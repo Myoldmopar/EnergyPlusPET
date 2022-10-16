@@ -1,3 +1,4 @@
+from json import dumps
 from time import sleep
 from typing import Callable, List
 
@@ -143,14 +144,34 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         return output
 
     def to_eplus_epjson_object(self) -> str:
-        pass
+        base_values_dict = {
+            'source_inlet_node': 'Your Coil Source Side Inlet Node',
+            'source_outlet_node': 'Your Coil Source Side Outlet Node',
+            'load_inlet_node': 'Your Coil Load Side Inlet Node',
+            'load_outlet_node': 'Your Coil Load Side Outlet Node',
+            'rated_capacity': self.rated_total_capacity.value,
+            'rated_power_consumption': self.rated_compressor_power.value,
+            'rated_load_side_volume_flow': self.rated_load_volume_flow_rate.value,
+            'rated_source_side_volume_flow': self.rated_source_volume_flow_rate.value,
+            'cycle_time': -999
+        }
+        capacity_coefficient_dict = {f"heating_capacity_coefficient_{i+1}": round(c, 4) for i, c in enumerate(self.c1)}
+        power_coefficient_dict = {f"compressor_power_coefficient_{i+1}": round(c, 4) for i, c in enumerate(self.c2)}
+        epjson_object = {
+            'WWHP:Heating:CurveFit': {
+                'Your Coil Name': {
+                    **base_values_dict, **capacity_coefficient_dict, **power_coefficient_dict
+                }
+            }
+        }
+        return dumps(epjson_object, indent=2)
 
     def generate_parameters(
             self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
             cb_progress_increment: Callable, cb_progress_done: Callable
     ):
-        cb_progress_initialize(5)
-        for i in range(5):
+        cb_progress_initialize(3)
+        for i in range(3):
             sleep(1)
             cb_progress_increment()
         cb_progress_done('DONE')
