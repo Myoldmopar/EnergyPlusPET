@@ -4,7 +4,7 @@ from threading import Thread
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y  # widget sides and directions to use in widget.pack commands
 from tkinter import END  # key used when adding data to the scrolledText object
 from tkinter import IntVar, StringVar  # GUI variables
-from tkinter import NSEW, W, EW, SW  # sticky cardinal directions to use in widget grid commands
+from tkinter import NSEW, W, EW, S  # sticky cardinal directions to use in widget grid commands
 from tkinter import SUNKEN, DISABLED, ACTIVE  # attributes used to modify widget appearance
 from tkinter import Tk, Button, Frame, Label, PhotoImage, scrolledtext, Scrollbar, Menu  # widgets
 from tkinter import messagebox, filedialog  # simple dialogs for user messages
@@ -84,7 +84,9 @@ class EnergyPlusPetWindow(Tk):
         self.var_data_plot = IntVar(value=1)
         self.var_error_plot = IntVar(value=1)
         self.var_progress = IntVar(value=0)
-        self.var_status = StringVar(value="Form Initialized, Catalog Data: Empty")
+        self.var_status_equip = StringVar(value="Selected Equipment: NONE")
+        self.var_status_data = StringVar(value="Catalog Data: NOT READY")
+        self.var_status_status = StringVar(value="Program Initialized")
 
     def _build_gui(self):
 
@@ -105,7 +107,15 @@ class EnergyPlusPetWindow(Tk):
 
         # build the status bar
         status_frame = Frame(self)
-        Label(status_frame, relief=SUNKEN, anchor=SW, textvariable=self.var_status).pack(fill=BOTH, expand=True)
+        Label(status_frame, relief=SUNKEN, anchor=S, textvariable=self.var_status_equip).pack(
+            side=LEFT, fill=BOTH, expand=True
+        )
+        Label(status_frame, relief=SUNKEN, anchor=S, textvariable=self.var_status_data).pack(
+            side=LEFT, fill=BOTH, expand=True
+        )
+        Label(status_frame, relief=SUNKEN, anchor=S, textvariable=self.var_status_status).pack(
+            side=LEFT, fill=BOTH, expand=True
+        )
 
         # pack the parent objects on the GUI
         label_frame_equip_type.grid(row=0, column=0, sticky=NSEW)
@@ -250,11 +260,13 @@ class EnergyPlusPetWindow(Tk):
             self.button_catalog['state'] = DISABLED
             self.button_create['state'] = DISABLED
             self.button_preview['state'] = DISABLED
+            self.button_save_data['state'] = ACTIVE
         elif self.selected_equip_instance is None or self.selected_equip_instance.this_type() == EquipType.InvalidType:
             self.button_engage['state'] = ACTIVE
             self.button_catalog['state'] = DISABLED
             self.button_create['state'] = DISABLED
             self.button_preview['state'] = DISABLED
+            self.button_save_data['state'] = DISABLED
         else:
             self.button_engage['state'] = ACTIVE
             self.button_catalog['state'] = ACTIVE
@@ -266,9 +278,9 @@ class EnergyPlusPetWindow(Tk):
                 self.button_create['state'] = DISABLED
                 self.button_save_data['state'] = DISABLED
 
-    @staticmethod
-    def help_documentation():
+    def help_documentation(self):
         browser_open('https://energypluspet.readthedocs.io/en/latest/')
+        self.update_status_bar('Launched online documentation')
 
     def preview_data(self):
         preview = RequiredDataPreviewForm(self, self.selected_equip_instance)
@@ -311,6 +323,7 @@ class EnergyPlusPetWindow(Tk):
             if self.selected_equip_instance is None:
                 messagebox.showwarning("Not Implemented Yet", "This type has not been implemented yet, sorry!")
                 return
+            self.update_status_bar(f"New Equipment Type Selected")
             self.refresh_gui_state()
             return
         if potential_new_equip_type == self.selected_equip_instance.this_type():
@@ -324,7 +337,7 @@ class EnergyPlusPetWindow(Tk):
             if response:
                 self.catalog_data_manager.reset()
                 self.full_data_set = None
-                self.update_status_bar(f"New Equipment Type Selected ({potential_new_equip_type})")
+                self.update_status_bar(f"New Equipment Type Selected")
             self.refresh_gui_state()
 
     def catalog_data_wizard(self):
@@ -349,6 +362,7 @@ class EnergyPlusPetWindow(Tk):
         self.catalog_data_manager.add_base_data('Foo:Bar')
         self.full_data_set = self.catalog_data_manager.process()
         self.refresh_gui_state()
+        self.update_status_bar('Processed Catalog Data')
 
     def get_correction_factor_summaries(self) -> bool:
         cdf = CorrectionFactorSummaryForm(self, self.catalog_data_manager, self.selected_equip_instance)
@@ -366,18 +380,21 @@ class EnergyPlusPetWindow(Tk):
         # set buttons to disabled while it runs
         self.thread_running = True
         self.refresh_gui_state()
+        self.update_status_bar('Starting parameter generation process')
         thd = Thread(target=self.generate_parameters, args=(self.selected_equip_instance, self.catalog_data_manager))
         thd.daemon = True
         thd.start()
 
-    def update_status_bar(self, extra_message: str = ''):
-        status_clause = ''
-        if extra_message:
-            status_clause = f"  Status Update: {extra_message}"
-        if self.catalog_data_manager.data_processed:
-            self.var_status.set(f"Catalog Data processed and ready.{status_clause}")
+    def update_status_bar(self, extra_message: str):
+        if self.selected_equip_instance is None:
+            self.var_status_equip.set("Selected Equipment: NONE")
         else:
-            self.var_status.set(f"Catalog Data is NOT READY.{status_clause}")
+            self.var_status_equip.set(f"Selected Equipment: {self.selected_equip_instance.name()}")
+        if not self.catalog_data_manager.data_processed:
+            self.var_status_data.set("Catalog data: NOT READY")
+        else:
+            self.var_status_data.set("Catalog Data: READY")
+        self.var_status_status.set(extra_message)
 
     def handler_background_thread_increment(self):
         self.var_progress.set(self.var_progress.get() + 1)
@@ -394,6 +411,7 @@ class EnergyPlusPetWindow(Tk):
     def handler_background_thread_done(self, response: str):
         self.thread_running = False
         self.refresh_gui_state()
+        self.update_status_bar('Finished Parameter Generation')
         self.output_box.delete('1.0', END)
         self.output_box.insert(END, response)
 

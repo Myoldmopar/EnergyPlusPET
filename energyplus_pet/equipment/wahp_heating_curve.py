@@ -88,53 +88,53 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         fields.extend(self.c1)
         fields.append('Your Heat Pump Cycle Time')
         form = """
-        HeatPump:WaterToAir:EquationFit:Heating,
-        {0},{1}!-Name
-        {2},{3}!-Source Side Inlet Node Name
-        {4},{5}!-Source Side Outlet Node Name
-        {6},{7}!-Load Side Inlet Node Name
-        {8},{9}!-Load Side Outlet Node Name
-        {10},{11}!-Rated Load Side Flow Rate
-        {12},{13}!-Rated Source Side Flow Rate
-        {14},{15}!-Rated Heating Capacity
-        {16},{17}!-Rated Heating COP
-        {18},{19}!-Heating Capacity Coefficient 1
-        {20},{21}!-Heating Capacity Coefficient 2
-        {22},{23}!-Heating Capacity Coefficient 3
-        {24},{25}!-Heating Capacity Coefficient 4
-        {26},{27}!-Heating Capacity Coefficient 5
-        {28},{29}!-Heating Compressor Power Coefficient 1
-        {30},{31}!-Heating Compressor Power Coefficient 2
-        {32},{33}!-Heating Compressor Power Coefficient 3
-        {34},{35}!-Heating Compressor Power Coefficient 4
-        {36},{37}!-Heating Compressor Power Coefficient 5
-        {38};{39}!-Cycle Time
+HeatPump:WaterToAir:EquationFit:Heating,
+{0},{1}!-Name
+{2},{3}!-Source Side Inlet Node Name
+{4},{5}!-Source Side Outlet Node Name
+{6},{7}!-Load Side Inlet Node Name
+{8},{9}!-Load Side Outlet Node Name
+{10},{11}!-Rated Load Side Flow Rate
+{12},{13}!-Rated Source Side Flow Rate
+{14},{15}!-Rated Heating Capacity
+{16},{17}!-Rated Heating COP
+{18},{19}!-Heating Capacity Coefficient 1
+{20},{21}!-Heating Capacity Coefficient 2
+{22},{23}!-Heating Capacity Coefficient 3
+{24},{25}!-Heating Capacity Coefficient 4
+{26},{27}!-Heating Capacity Coefficient 5
+{28},{29}!-Heating Compressor Power Coefficient 1
+{30},{31}!-Heating Compressor Power Coefficient 2
+{32},{33}!-Heating Compressor Power Coefficient 3
+{34},{35}!-Heating Compressor Power Coefficient 4
+{36},{37}!-Heating Compressor Power Coefficient 5
+{38};{39}!-Cycle Time
                 """
         return self.fill_eplus_object_format(fields, form)
 
     def to_parameter_summary(self) -> str:
         output = f"""{self.name()}
-        **Begin Nomenclature**
-        HC: Heating Capacity
-        HP: Heating Power Consumption
-        TLI: Entering Load-side Temperature
-        TSI: Entering Source-side Temperature
-        VLI: Entering Load-side Flow Rate
-        VSI: Entering Source-side Flow Rate
-        Subscript _R: Rated Value
-        Subscript _#: Coefficient #
-        **End Nomenclature**
+**Begin Nomenclature**
+HC: Heating Capacity
+HP: Heating Power Consumption
+TLI: Entering Load-side Temperature
+TSI: Entering Source-side Temperature
+VLI: Entering Load-side Flow Rate
+VSI: Entering Source-side Flow Rate
+Subscript _R: Rated Value
+Subscript _#: Coefficient #
+**End Nomenclature**
 
-        **Begin Governing Equations**
-        (HC/HC_R) = HC_1 + HC_2*(TLI/TLI_R) + HC_3*(TSI/TSI_R) + HC_4*(VLI/VLI_R) + HC_5*(VSI/VSI_R)
-        (HP/HP_R) = HP_1 + HP_2*(TLI/TLI_R) + HP_3*(TSI/TSI_R) + HP_4*(VLI/VLI_R) + HP_5*(VSI/VSI_R)
-        **End Governing Equations**
+**Begin Governing Equations**
+(HC/HC_R) = HC_1 + HC_2*(TLI/TLI_R) + HC_3*(TSI/TSI_R) + HC_4*(VLI/VLI_R) + HC_5*(VSI/VSI_R)
+(HP/HP_R) = HP_1 + HP_2*(TLI/TLI_R) + HP_3*(TSI/TSI_R) + HP_4*(VLI/VLI_R) + HP_5*(VSI/VSI_R)
+**End Governing Equations**
 
-        **Begin Reporting Parameters**
-        Rated Load-side Heating Capacity: {self.rated_total_capacity}
-        Rated Heating Power Consumption: {self.rated_compressor_power}
-        Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate}
-        Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
+**Begin Reporting Parameters**
+Rated Load-side Heating Capacity: {self.rated_total_capacity}
+Rated Heating Power Consumption: {self.rated_compressor_power}
+Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate}
+Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         """
         for i, c in enumerate(self.c1):
             output += f"Heating Capacity Coefficient HC_{i + 1}: {round(c, 4)}\n"
