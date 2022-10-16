@@ -21,7 +21,6 @@ class CorrectionFactor:
     def __init__(self, name: str, remove_callback: Callable):
         self.name = name
         self.base_column_index: int  # TODO: Use this as the OptionMenu current selection ideally
-        self.base_column_str = StringVar(value="Monday")  # TODO: Select a reasonable guess from data columns
         self.columns_to_modify: Tuple[int]  # TODO: Use this as the list of columns selected in the Listbox
         self.num_corrections: int
         self.base_data: List[float]
@@ -31,14 +30,25 @@ class CorrectionFactor:
         self.is_new_or_blank: bool = True
         self.remove_me = False
         self.remove_callback = remove_callback
-        self.num_corrections_var = IntVar()
-        self.wb_db_factor = BooleanVar()
-        self.mod_type = StringVar(value=CorrectionFactorType.Multiplier.name)
+        self.num_corrections = 0
+        # eventually Tk Variables, but assigned to None here to allow unit testing to pass on non-GUI terminals
+        self.base_column_str = None
+        self.num_corrections_var = None
+        self.wb_db_factor = None
+        self.mod_type = None
 
     def not_new_anymore(self):
         self.is_new_or_blank = False
 
+    def update_num_corrections(self, *_):  # pragma: no cover
+        self.num_corrections = self.num_corrections_var.get()
+
     def render_as_tk_frame(self, parent: Frame) -> LabelFrame:  # pragma: no cover
+        self.base_column_str = StringVar(value="Monday")  # TODO: Select a reasonable guess from data columns
+        self.num_corrections_var = IntVar()
+        self.num_corrections_var.trace('w', self.update_num_corrections)
+        self.wb_db_factor = BooleanVar()
+        self.mod_type = StringVar(value=CorrectionFactorType.Multiplier.name)
         f = LabelFrame(parent, text=self.name)
         p = 4
         Button(f, text="❌ Remove", command=self.remove).grid(
@@ -94,4 +104,4 @@ class CorrectionFactor:
         self.remove_callback()
 
     def description(self):
-        return f"CorrectionFactor {self.name}; {self.num_corrections_var.get()} corrections"
+        return f"CorrectionFactor {self.name}; {self.num_corrections} corrections"
