@@ -7,6 +7,7 @@ class CatalogDataManager:
     def __init__(self):
         self.correction_factors: List[CorrectionFactor] = []
         self.base_data = ''
+        self.data_processed = False
 
     def add_correction_factor(self, cf: CorrectionFactor):
         self.correction_factors.append(cf)
@@ -19,10 +20,10 @@ class CatalogDataManager:
         result += '\n' + self.base_data
         for cf in self.correction_factors:
             result += '\n' + cf.name
+        self.data_processed = True
         return result
 
     def reset(self):
         self.correction_factors.clear()
+        self.data_processed = False
         self.base_data = ''
-
-    # TODO: Move catalog data in place checks and such into here

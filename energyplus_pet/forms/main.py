@@ -58,7 +58,6 @@ class EnergyPlusPetWindow(Tk):
         # set up some important member variables
         self.full_data_set = None
         self.selected_equip_instance: BaseEquipment = BaseEquipment()  # nothing for now
-        self.catalog_data_in_place = False
         self.catalog_data_manager = CatalogDataManager()
         self.thread_running = False
 
@@ -260,7 +259,7 @@ class EnergyPlusPetWindow(Tk):
             self.button_engage['state'] = ACTIVE
             self.button_catalog['state'] = ACTIVE
             self.button_preview['state'] = ACTIVE
-            if self.catalog_data_in_place:
+            if self.catalog_data_manager.data_processed:
                 self.button_create['state'] = ACTIVE
                 self.button_save_data['state'] = ACTIVE
             else:
@@ -306,9 +305,12 @@ class EnergyPlusPetWindow(Tk):
             return
         node_tag = node_tags[0]
         potential_new_equip_type = EquipTypeUniqueStrings.get_equip_type_from_unique_string(node_tag)
-        if not self.catalog_data_in_place:
+        if not self.catalog_data_manager.data_processed:
             # then we are just selecting a new equip type, select it and move on
             self.selected_equip_instance = EquipmentFactory.factory(potential_new_equip_type)
+            if self.selected_equip_instance is None:
+                messagebox.showwarning("Not Implemented Yet", "This type has not been implemented yet, sorry!")
+                return
             self.refresh_gui_state()
             return
         if potential_new_equip_type == self.selected_equip_instance.this_type():
@@ -320,7 +322,7 @@ class EnergyPlusPetWindow(Tk):
                 "New type selected, but catalog data is already present. Would you like to clear the old data?"
             )
             if response:
-                self.catalog_data_in_place = False
+                self.catalog_data_manager.reset()
                 self.full_data_set = None
                 self.update_status_bar(f"New Equipment Type Selected ({potential_new_equip_type})")
             self.refresh_gui_state()
@@ -345,7 +347,6 @@ class EnergyPlusPetWindow(Tk):
         # now that we have the full correction factor details, we need to collect the main catalog data
         # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
         self.catalog_data_manager.add_base_data('Foo:Bar')
-        self.catalog_data_in_place = True
         self.full_data_set = self.catalog_data_manager.process()
         self.refresh_gui_state()
 
@@ -373,8 +374,8 @@ class EnergyPlusPetWindow(Tk):
         status_clause = ''
         if extra_message:
             status_clause = f"  Status Update: {extra_message}"
-        if self.catalog_data_in_place:
-            self.var_status.set(f"Catalog Data in place, ready to run.{status_clause}")
+        if self.catalog_data_manager.data_processed:
+            self.var_status.set(f"Catalog Data processed and ready.{status_clause}")
         else:
             self.var_status.set(f"Catalog Data is NOT READY.{status_clause}")
 
