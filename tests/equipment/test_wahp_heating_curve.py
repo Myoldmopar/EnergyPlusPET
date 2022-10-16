@@ -1,16 +1,16 @@
 from energyplus_pet.data_manager import CatalogDataManager
-from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
 from energyplus_pet.equipment.equip_types import EquipType
 from .equipment_test_helper import EquipmentTestHelper
 
 
-class TestWWHPHeatingCurve(EquipmentTestHelper):
+class TestWAHPHeatingCurve(EquipmentTestHelper):
     def test_interface(self):
-        eq = WaterToWaterHeatPumpHeatingCurveFit()
-        self.check_interface(eq, EquipType.WWHP_Heating_CurveFit)
+        eq = WaterToAirHeatPumpHeatingCurveFit()
+        self.check_interface(eq, EquipType.WAHP_Heating_CurveFit)
 
     def test_generated_parameters(self):
-        eq = WaterToWaterHeatPumpHeatingCurveFit()
+        eq = WaterToAirHeatPumpHeatingCurveFit()
         cdm = CatalogDataManager()
         eq.generate_parameters(cdm, lambda *_: None, lambda *_: None, lambda *_: None)
 

@@ -11,6 +11,7 @@ class EquipmentFactory:
     @staticmethod
     def factory(equipment_type: EquipType) -> Union[BaseEquipment, None]:
         type_map = {
+            EquipType.InvalidType: None,
             EquipType.WAHP_Heating_CurveFit: WaterToAirHeatPumpHeatingCurveFit,
             EquipType.WAHP_Heating_PE: None,
             EquipType.WAHP_Cooling_CurveFit: None,

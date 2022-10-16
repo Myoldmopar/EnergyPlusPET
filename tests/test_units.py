@@ -106,6 +106,14 @@ class TestRotationSpeedUnits(TestLayer):
         self.worker_conversion(1.0, unit_type.RadiansPerSecond, 0.159154, 4)
 
 
+class TestDimensionlessUnits(TestLayer):
+    def test_dimensionless_units(self):
+        unit_type = DimensionlessUnits
+        self.set_unit_type(unit_type)
+        self.worker_construction(1.0, unit_type.Dimensionless)
+        self.worker_conversion(1.0, unit_type.Dimensionless, 1.0, 6)
+
+
 class TestUnitFactory(TestCase):
     def test_all_types(self):
         self.assertIsInstance(unit_instance_factory(0.0, UnitType.Power), PowerUnits)
