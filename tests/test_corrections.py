@@ -1,13 +1,9 @@
-from tkinter import Tk
 from unittest import TestCase
 
 from energyplus_pet.correction_factor import CorrectionFactor
 
 
 class TestCorrectionFactor(TestCase):
-
-    def setUp(self) -> None:
-        self.root_tk = Tk()
 
     def test_correction_factor_a(self):
         c = CorrectionFactor(name="My Correction", remove_callback=lambda: None)
