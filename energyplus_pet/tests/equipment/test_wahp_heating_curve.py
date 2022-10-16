@@ -1,7 +1,7 @@
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
 from energyplus_pet.equipment.equip_types import EquipType
-from .equipment_test_helper import EquipmentTestHelper
+from energyplus_pet.tests.equipment.equipment_test_helper import EquipmentTestHelper
 
 
 class TestWAHPHeatingCurve(EquipmentTestHelper):

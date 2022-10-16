@@ -173,7 +173,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
     ):
         cb_progress_initialize(3)
         for i in range(3):
-            sleep(1)
+            sleep(0.3)
             cb_progress_increment()
         cb_progress_done('DONE')
 

@@ -14,7 +14,7 @@ class TestLayer(TestCase):
         self.unit_type = unit_type
 
     def worker_construction(self, value: float, unit: int):
-        if self.unit_type is None:
+        if self.unit_type is None:  # pragma: no cover, should never get here, fix the unit test
             self.fail("Forgot to call set_unit_type before calling worker_construction")
         u = self.unit_type(value, "dummy name", "dummy description", unit)
         # verifies the interface
@@ -34,7 +34,7 @@ class TestLayer(TestCase):
         self.assertEqual(unit, u.units)
 
     def worker_conversion(self, init_val: float, init_units: int, expected_val: float, places: int):
-        if self.unit_type is None:
+        if self.unit_type is None:  # pragma: no cover, should never get here, fix the unit test
             self.fail("Forgot to call set_unit_type before calling worker_conversion")
         u = self.unit_type(init_val, "dummy name", "dummy description", init_units)
         u.convert_to_calculation_unit()
