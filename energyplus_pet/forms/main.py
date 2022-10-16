@@ -323,7 +323,7 @@ class EnergyPlusPetWindow(Tk):
             if self.selected_equip_instance is None:
                 messagebox.showwarning("Not Implemented Yet", "This type has not been implemented yet, sorry!")
                 return
-            self.update_status_bar(f"New Equipment Type Selected")
+            self.update_status_bar("New Equipment Type Selected")
             self.refresh_gui_state()
             return
         if potential_new_equip_type == self.selected_equip_instance.this_type():
@@ -337,7 +337,7 @@ class EnergyPlusPetWindow(Tk):
             if response:
                 self.catalog_data_manager.reset()
                 self.full_data_set = None
-                self.update_status_bar(f"New Equipment Type Selected")
+                self.update_status_bar("New Equipment Type Selected")
             self.refresh_gui_state()
 
     def catalog_data_wizard(self):
