@@ -17,7 +17,7 @@ setup(
     author_email='a@a.a',
     url='https://github.com/Myoldmopar/EnergyPlusPet',
     license='UnlicensedForNow',
-    install_requires=['pyperclip', 'tksheet'],
+    install_requires=['pyperclip', 'tksheet', 'matplotlib', 'numpy'],
     entry_points={
         'console_scripts': ['energyplus_pet_gui=energyplus_pet.runner:main_gui']
     }

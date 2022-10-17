@@ -1,7 +1,11 @@
 # the dependencies listed here are for developers of this library
 # dependencies required by users when they pip install this onto their system should be defined in setup.py
 
-# trying to only require the lightest of packages
+# trying to only require the lightest of packages, unfortunately I cannot find a lightweight plotting library
+# so here we are with matplotlib.  And once we have matplotlib, we already get numpy, so there's no reason to not
+# use numpy for arrays.  If I can ever find a really lightweight plot libraries, I'll try to remove matplotlib and numpy
+matplotlib
+numpy
 pyperclip
 tksheet
 

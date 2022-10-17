@@ -18,6 +18,7 @@ from energyplus_pet.equipment.manager import EquipmentFactory
 from energyplus_pet.equipment.equip_types import EquipType, EquipTypeUniqueStrings
 from energyplus_pet.forms.correction_summary import CorrectionFactorSummaryForm
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
+from energyplus_pet.forms.catalog_plot import CatalogDataPlotForm
 
 
 class EnergyPlusPetWindow(Tk):
@@ -353,6 +354,8 @@ class EnergyPlusPetWindow(Tk):
         # if that was successful, need to open individual correction entry forms for each factor
         for cf in self.catalog_data_manager.correction_factors:
             print(cf.description())
+            # TODO: Need to create a new form, modal, and check the response; if cancel then abort
+            # Do we need to reset the catalog data at all?
             # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
             # cf_detailed = CorrectionFactorDetailedForm(self) # modal, blah
             # catalog.add_correction_factor(cf)
@@ -360,7 +363,13 @@ class EnergyPlusPetWindow(Tk):
         # now that we have the full correction factor details, we need to collect the main catalog data
         # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
         self.catalog_data_manager.add_base_data('Foo:Bar')
-        self.full_data_set = self.catalog_data_manager.process()
+        # then process the base data and correction factors into a full data set
+        self.catalog_data_manager.process()  # should return a meaningful response, not text
+        # and actually, if the data doesn't have diversity, we should accept it, but not allow creating parameters
+        # the user should be able to reopen the wizard and add more data to variables or whatever
+        # then display the catalog data plot form for inspection
+        cdf = CatalogDataPlotForm(self, self.catalog_data_manager)
+        cdf.wait_window()
         self.refresh_gui_state()
         self.update_status_bar('Processed Catalog Data')
 
