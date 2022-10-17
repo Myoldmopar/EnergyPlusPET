@@ -1,6 +1,6 @@
 from json import dumps
 from time import sleep
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
@@ -175,10 +175,24 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         for i in range(3):
             sleep(0.3)
             cb_progress_increment()
-        cb_progress_done('DONE')
+        cb_progress_done(True)
 
-    def generate_absolute_plot(self):
-        pass
+    def get_absolute_plot_data(self) -> Tuple:
+        return (
+            ('Total Heat Transfer Model Output', 'line', 'red', [0.7, 1.9, 3.4, 4.1, 5.6, 5.9]),
+            ('Total Heat Transfer Catalog Output', 'point', 'red', [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),
+            ('Compressor Power Model Output', 'line', 'green', [1.7, 2.9, 4.4, 3.1, 7.6, 6.9]),
+            ('Compressor Power Catalog Output', 'point', 'green', [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]),
+        )
 
-    def generate_error_plot(self):
-        pass
+    def get_error_plot_data(self) -> Tuple:
+        total_heat_model = [0.7, 1.9, 3.4, 4.1, 5.6, 5.9]
+        total_heat_catalog = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+        comp_power_model = [1.7, 2.9, 4.4, 3.1, 7.6, 6.9]
+        comp_power_catalog = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+        error_total = [100.0 * (total_heat_model[i] - total_heat_catalog[i]) / total_heat_catalog[i] for i in range(6)]
+        error_power = [100.0 * (comp_power_model[i] - comp_power_catalog[i]) / comp_power_catalog[i] for i in range(6)]
+        return (
+            ('Total Heat Transfer % Error', 'line', 'red', error_total),
+            ('Compressor Power % Error', 'line', 'green', error_power),
+        )

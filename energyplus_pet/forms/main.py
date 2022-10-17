@@ -19,6 +19,7 @@ from energyplus_pet.equipment.equip_types import EquipType, EquipTypeUniqueStrin
 from energyplus_pet.forms.correction_summary import CorrectionFactorSummaryForm
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
 from energyplus_pet.forms.catalog_plot import CatalogDataPlotForm
+from energyplus_pet.forms.comparison_plot import ComparisonPlot
 
 
 class EnergyPlusPetWindow(Tk):
@@ -417,31 +418,44 @@ class EnergyPlusPetWindow(Tk):
     def callback_background_thread_starting(self, initial_progress_value: int):
         self.gui_queue.put(lambda: self.handler_background_thread_starting(initial_progress_value))
 
-    def handler_background_thread_done(self, response: str):
+    def handler_background_thread_done(self, success: bool, err_message: str = ''):
         self.thread_running = False
         self.refresh_gui_state()
         self.update_status_bar('Finished Parameter Generation')
         self.output_box.delete('1.0', END)
-        self.output_box.insert(END, response)
+        if not success:
+            self.output_box.insert(END, err_message)
+            return
+        output = ''
+        if self.var_output_type.get() == self.output_type_idf:
+            output = self.selected_equip_instance.to_eplus_idf_object()
+        elif self.var_output_type.get() == self.output_type_parameter:
+            output = self.selected_equip_instance.to_parameter_summary()
+        elif self.var_output_type.get() == self.output_type_epjson:
+            output = self.selected_equip_instance.to_eplus_epjson_object()
+        self.output_box.insert(END, output)
+        if self.var_data_plot:
+            ComparisonPlot(
+                self, self.catalog_data_manager, self.selected_equip_instance, ComparisonPlot.PlotType.RawComparison
+            )
+        if self.var_error_plot:
+            ComparisonPlot(
+                self, self.catalog_data_manager, self.selected_equip_instance, ComparisonPlot.PlotType.PercentError
+            )
 
-    def callback_background_thread_done(self, response: str):
-        self.gui_queue.put(lambda: self.handler_background_thread_done(response))
+    def callback_background_thread_done(self, success: bool, err_message: str = ''):
+        self.gui_queue.put(lambda: self.handler_background_thread_done(success, err_message))
 
     def generate_parameters(self, equip_instance: BaseEquipment, data: CatalogDataManager) -> None:
+        # the self.selected_equip_instance should be mutated, right?  So that we don't have to pass it back upward?
         try:
             equip_instance.generate_parameters(
                 data, self.callback_background_thread_starting,
                 self.callback_background_thread_increment, self.callback_background_thread_done
             )
         except Exception as e:  # any type of exception
-            self.callback_background_thread_done("Error occurred! " + str(e))
+            self.callback_background_thread_done(False, "Error occurred! " + str(e))
             return
-        if self.var_output_type.get() == self.output_type_idf:
-            self.callback_background_thread_done(equip_instance.to_eplus_idf_object())
-        elif self.var_output_type.get() == self.output_type_parameter:
-            self.callback_background_thread_done(equip_instance.to_parameter_summary())
-        elif self.var_output_type.get() == self.output_type_epjson:
-            self.callback_background_thread_done(equip_instance.to_eplus_epjson_object())
 
     def run(self) -> None:
         """

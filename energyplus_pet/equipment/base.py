@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
@@ -36,10 +36,10 @@ class BaseEquipment:
     ): pass
 
     @abstractmethod
-    def generate_absolute_plot(self): pass
+    def get_absolute_plot_data(self) -> Tuple: pass
 
     @abstractmethod
-    def generate_error_plot(self): pass
+    def get_error_plot_data(self) -> Tuple: pass
 
     @staticmethod
     def fill_eplus_object_format(fields: List[str], form: str) -> str:
