@@ -19,7 +19,7 @@ jobs:
 
     - name: Install Pip Dependencies
       shell: bash
-      run: pip install wheel
+      run: pip install wheel pyperclip tksheet matplotlib
 
     - name: Build the Wheel
       shell: bash

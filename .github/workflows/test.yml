@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: 3.8
       - name: Install Pip Dependencies
-        run: pip install nose coverage coveralls pyperclip tksheet
+        run: pip install nose coverage coveralls pyperclip tksheet matplotlib
       - name: Run Tests
         run: nosetests
       - name: Coveralls
