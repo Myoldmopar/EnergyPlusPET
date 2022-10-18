@@ -6,9 +6,9 @@ from tkinter import Button, Label, Listbox, Scrollbar
 from tkinter import HORIZONTAL, TOP, X, BOTH, VERTICAL, NW, LEFT, Y, EW, RIGHT
 from tkinter import StringVar
 from tkinter.ttk import Separator
+from typing import List
 
-from energyplus_pet.correction_factor import CorrectionFactor
-from energyplus_pet.data_manager import CatalogDataManager
+from energyplus_pet.forms.correction_summary_widget import CorrectionSummaryWidget
 from energyplus_pet.equipment.base import BaseEquipment
 
 
@@ -25,22 +25,20 @@ class CorrectionFactorSummaryForm(Toplevel):
     class ExitCode(Enum):
         Cancel = auto()
         Done = auto()
-        Skip = auto()
         Error = auto()
 
-    def __init__(self, parent_window, data_manager: CatalogDataManager, equipment: BaseEquipment):
+    def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
         # store arguments for manipulation here, these are passed by assignment, in this case "by reference"
-        self.data_manager = data_manager
-        self.equipment = equipment
-        # initialize an exit code so that the main form knows how this window closed
-        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error
+        self.summary_widgets: List[CorrectionSummaryWidget] = []
+        self._equipment = equipment
+        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error  # initialize with this value
         self.text_done = 'Done'
         self.text_skip = 'Skip'
         # create the gui
         self._build_gui()
         # draw factors, in case there already are any
-        self.redraw_factors()
+        self._redraw_factors()
         # finalize UI operations
         self.wait_visibility()
         self.grab_set()
@@ -58,32 +56,33 @@ class CorrectionFactorSummaryForm(Toplevel):
         #
         correction_factor_outer_frame = Frame(self)
         # need to store the canvas as a member since it is "scrolled" to view the inner frame
-        self.factor_canvas = Canvas(correction_factor_outer_frame)
+        self._factor_canvas = Canvas(correction_factor_outer_frame)
         # need to store the scrollbar because we check what widget we "scrolled" later
-        self.scrollbar = Scrollbar(correction_factor_outer_frame, orient=VERTICAL, command=self.factor_canvas.yview)
+        self._scrollbar = Scrollbar(correction_factor_outer_frame, orient=VERTICAL, command=self._factor_canvas.yview)
         # need to store this because it is the actual frame where we place correction factor summaries
-        self.correction_factor_inner_frame = Frame(self.factor_canvas, height=20)
+        self._correction_factor_inner_frame = Frame(self._factor_canvas, height=20)
         # bind the inner frame's configure event to a lambda that will update the containing canvas
-        self.correction_factor_inner_frame.bind(
-            Event.Configure, lambda e: self.factor_canvas.configure(scrollregion=self.factor_canvas.bbox("all"))
+        self._correction_factor_inner_frame.bind(
+            Event.Configure, lambda e: self._factor_canvas.configure(scrollregion=self._factor_canvas.bbox("all"))
         )
+        self._correction_factor_inner_frame.grid_columnconfigure(0, weight=1)
         # create a window into the inner frame to display on the canvas
-        self.factor_canvas.create_window((0, 0), window=self.correction_factor_inner_frame, anchor=NW)
+        self._factor_canvas.create_window((0, 0), window=self._correction_factor_inner_frame, anchor=NW)
         # configure the canvas to update the scrollbar when the view is changed in any other way
-        self.factor_canvas.configure(yscrollcommand=self.scrollbar.set)
+        self._factor_canvas.configure(yscrollcommand=self._scrollbar.set)
         # pack the canvas and the scrollbar inside the outer frame
-        self.factor_canvas.pack(side=LEFT, fill=BOTH, expand=True, padx=3, pady=3)
-        self.scrollbar.pack(side=RIGHT, fill=Y, padx=3, pady=3)
+        self._factor_canvas.pack(side=LEFT, fill=BOTH, expand=True, padx=3, pady=3)
+        self._scrollbar.pack(side=RIGHT, fill=Y, padx=3, pady=3)
         # bind the mouse entry/exit events to register or deregister mouse wheel listeners
-        self.factor_canvas.bind(Event.WidgetEnter, self.bind_wheel)
-        self.factor_canvas.bind(Event.WidgetLeave, self.unbind_wheel)
+        self._factor_canvas.bind(Event.WidgetEnter, self._bind_mouse_wheel_events)
+        self._factor_canvas.bind(Event.WidgetLeave, self._unbind_mouse_wheel_events)
         #
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
-        btn_add = Button(button_frame, text="Add Factor", command=self.add_factor)
-        self.txt_done_skip = StringVar(value=self.text_skip)
-        btn_ok_skip = Button(button_frame, textvariable=self.txt_done_skip, command=self.done_skip)
-        btn_cancel = Button(button_frame, text="Cancel", command=self.cancel)
+        btn_add = Button(button_frame, text="Add Factor", command=self._add_factor_widget)
+        self._txt_done_skip = StringVar(value=self.text_skip)
+        btn_ok_skip = Button(button_frame, textvariable=self._txt_done_skip, command=self._done_skip)
+        btn_cancel = Button(button_frame, text="Cancel", command=self._cancel)
         # pack everything
         lbl.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         s_0.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
@@ -98,74 +97,72 @@ class CorrectionFactorSummaryForm(Toplevel):
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.grid_columnconfigure(2, weight=1)
 
-    def mouse_wheel(self, event, scroll):
+    def _handle_mouse_wheel_event_linux(self, event, scroll):
         amount_to_scroll_canvas = int(scroll)
-        if event.widget == self.scrollbar:
+        if event.widget == self._scrollbar:
             amount_to_scroll_canvas = int(amount_to_scroll_canvas / 2.0)
         elif isinstance(event.widget, Listbox):
             amount_to_scroll_canvas = 0
-        self.factor_canvas.yview_scroll(amount_to_scroll_canvas, "units")
+        self._factor_canvas.yview_scroll(amount_to_scroll_canvas, "units")
 
-    def mouse_wheel_windows(self, event):
+    def _handle_mouse_wheel_event_windows(self, event):
         amount_to_scroll_canvas = int(-1 * (event.delta / 120))
-        if event.widget == self.scrollbar:
+        if event.widget == self._scrollbar:
             amount_to_scroll_canvas = int(amount_to_scroll_canvas / 2.0)
         elif isinstance(event.widget, Listbox):
             amount_to_scroll_canvas = 0
-        self.factor_canvas.yview_scroll(amount_to_scroll_canvas, "units")
+        self._factor_canvas.yview_scroll(amount_to_scroll_canvas, "units")
 
-    def bind_wheel(self, _):
+    def _bind_mouse_wheel_events(self, _):
         if system() == 'Linux':
-            self.factor_canvas.bind_all(Event.LinuxWheelUp, partial(self.mouse_wheel, scroll=-1))
-            self.factor_canvas.bind_all(Event.LinuxWheelDown, partial(self.mouse_wheel, scroll=1))
+            self._factor_canvas.bind_all(Event.LinuxWheelUp, partial(self._handle_mouse_wheel_event_linux, scroll=-1))
+            self._factor_canvas.bind_all(Event.LinuxWheelDown, partial(self._handle_mouse_wheel_event_linux, scroll=1))
         elif system() == 'Windows':
-            self.factor_canvas.bind_all(Event.WindowsWheelEvent, self.mouse_wheel_windows)
+            self._factor_canvas.bind_all(Event.WindowsWheelEvent, self._handle_mouse_wheel_event_windows)
 
-    def unbind_wheel(self, _):
+    def _unbind_mouse_wheel_events(self, _):
         if system() == 'Linux':
-            self.factor_canvas.unbind_all(Event.LinuxWheelUp)
-            self.factor_canvas.unbind_all(Event.LinuxWheelDown)
+            self._factor_canvas.unbind_all(Event.LinuxWheelUp)
+            self._factor_canvas.unbind_all(Event.LinuxWheelDown)
         elif system() == 'Windows':
-            self.factor_canvas.unbind_all(Event.WindowsWheelEvent)
+            self._factor_canvas.unbind_all(Event.WindowsWheelEvent)
 
-    def redraw_factors(self):
+    def _redraw_factors(self):
         # destroy all widgets from frame
-        for widget in self.correction_factor_inner_frame.winfo_children():
-            widget.destroy()
-        for i, f in enumerate(self.data_manager.correction_factors):
-            f.render_as_tk_frame(self.correction_factor_inner_frame).grid(row=i, column=0, sticky=EW, padx=3, pady=3)
-        self.correction_factor_inner_frame.grid_columnconfigure(0, weight=1)
+        # for widget in self._correction_factor_inner_frame.winfo_children():
+        #     widget.destroy()
+        for i, f in enumerate(self.summary_widgets):
+            f.grid(row=i, column=0, sticky=EW, padx=3, pady=3)
 
-    def add_factor(self):
+    def _add_factor_widget(self):
         name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
         if name is None:
             return
-        self.data_manager.add_correction_factor(CorrectionFactor(name, self.equipment, self.remove_a_factor))
-        self.redraw_factors()
-        self.txt_done_skip.set(self.text_done)
+        new_widget = CorrectionSummaryWidget(
+            self._correction_factor_inner_frame, name, self._equipment, self._remove_a_factor
+        )
+        self.summary_widgets.append(new_widget)
+        self._redraw_factors()
+        self._txt_done_skip.set(self.text_done)
 
-    def remove_a_factor(self):
-        # delete the widget
+    def _remove_a_factor(self):
         indexes_to_remove = []
-        for i, f in enumerate(self.data_manager.correction_factors):
+        for i, f in enumerate(self.summary_widgets):
             if f.remove_me:
                 indexes_to_remove.append(i)
         for i in reversed(indexes_to_remove):
-            del self.data_manager.correction_factors[i]
-        self.redraw_factors()
-        if len(self.data_manager.correction_factors) == 0:
-            self.txt_done_skip.set(self.text_skip)
+            self.summary_widgets[i].destroy()
+            del self.summary_widgets[i]
+        self._redraw_factors()
+        if len(self.summary_widgets) == 0:
+            self._txt_done_skip.set(self.text_skip)
 
-    def done_skip(self):
-        if self.txt_done_skip == self.text_done:
-            for cf in self.data_manager.correction_factors:
-                cf.gather()
-            self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
-        else:
-            self.exit_code = CorrectionFactorSummaryForm.ExitCode.Skip
+    def _done_skip(self):
+        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
         self.grab_release()
         self.destroy()
 
-    def cancel(self):
+    def _cancel(self):
+        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Cancel
         self.grab_release()
         self.destroy()

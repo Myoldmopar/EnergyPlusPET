@@ -6,6 +6,7 @@
 # use numpy for arrays.  If I can ever find a really lightweight plot libraries, I'll try to remove matplotlib and numpy
 matplotlib
 numpy
+scipy
 pyperclip
 tksheet
 

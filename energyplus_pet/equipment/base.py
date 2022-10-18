@@ -15,6 +15,9 @@ class BaseEquipment:
     def name(self) -> str: pass
 
     @abstractmethod
+    def short_name(self) -> str: pass
+
+    @abstractmethod
     def headers(self) -> ColumnHeaderArray: pass
 
     @abstractmethod

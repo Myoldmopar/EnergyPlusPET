@@ -87,8 +87,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         fields.extend(self.c1)
         fields.extend(self.c1)
         fields.append('Your Heat Pump Cycle Time')
-        form = """
-HeatPump:WaterToAir:EquationFit:Heating,
+        form = """HeatPump:WaterToAir:EquationFit:Heating,
 {0},{1}!-Name
 {2},{3}!-Source Side Inlet Node Name
 {4},{5}!-Source Side Outlet Node Name
