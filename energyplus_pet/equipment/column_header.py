@@ -26,6 +26,10 @@ class ColumnHeaderArray:
         """Constructs an array of columns from a list of column headers"""
         self.columns = columns
 
+    def __len__(self) -> int:
+        """Returns the length of the header array so it can be used in len() expressions"""
+        return len(self.columns)
+
     def unit_array(self) -> List[UnitType]:
         """Returns the list of units for these columns"""
         return [c.units for c in self.columns]

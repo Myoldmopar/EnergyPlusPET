@@ -9,9 +9,11 @@ from tkinter import SUNKEN, DISABLED, ACTIVE  # attributes used to modify widget
 from tkinter import Tk, Button, Frame, Label, PhotoImage, scrolledtext, Scrollbar, Menu  # widgets
 from tkinter import messagebox, filedialog  # simple dialogs for user messages
 from tkinter.ttk import LabelFrame, Progressbar, Treeview, Separator, Notebook  # ttk widgets
+from typing import List
 from webbrowser import open as browser_open
 
 from energyplus_pet import NICE_NAME, VERSION
+from energyplus_pet.correction_factor import CorrectionFactor
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.manager import EquipmentFactory
@@ -53,10 +55,10 @@ class EnergyPlusPetWindow(Tk):
         self.minsize(self.winfo_width(), self.winfo_height())
 
         # set up some important member variables
-        self.full_data_set = None
         self.selected_equip_instance: BaseEquipment = BaseEquipment()  # nothing for now
         self.catalog_data_manager = CatalogDataManager()
         self.thread_running = False
+        self.cf_summaries: List[CorrectionFactor] = []   # summaries only, catalog manager holds filled out versions
 
         # window setup operations
         self.update_status_bar("Program Initialized")
@@ -284,7 +286,6 @@ class EnergyPlusPetWindow(Tk):
             )
             if response:
                 self.catalog_data_manager.reset()
-                self.full_data_set = None
                 self.update_status_bar("New Equipment Type Selected")
             self._refresh_gui_state()
 
@@ -298,20 +299,26 @@ class EnergyPlusPetWindow(Tk):
         # first open a correction factor definition form window, if this returns False, it means abort
         if not self.get_correction_factor_summaries():
             return
-        # if that was successful, need to open individual correction entry forms for each factor
-        for cf in self.catalog_data_manager.cf_summaries:
-            print(cf.description())
+        # if that was successful, loop over each local summary and open individual correction entry forms for each
+        for cf in self.cf_summaries:
             # TODO: Need to create a new form, modal, and check the response; if cancel then abort
             # Do we need to reset the catalog data at all?
             # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
             # cf_detailed = CorrectionFactorDetailedForm(self) # modal, blah
-            # catalog.add_correction_factor(cf)
-            # self.catalog_data_manager.add_correction_factor(cf)
+            form_opening_and_such = cf
+            self.catalog_data_manager.add_correction_factor(form_opening_and_such)
         # now that we have the full correction factor details, we need to collect the main catalog data
         # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
-        self.catalog_data_manager.add_base_data('Foo:Bar')
+        base_data = []
+        for row in range(10):
+            this_row = [3.14 * row] * len(self.selected_equip_instance.headers())
+            base_data.append(this_row)
+        self.catalog_data_manager.add_base_data(base_data)
         # then process the base data and correction factors into a full data set
-        self.catalog_data_manager.process()  # should return a meaningful response, not text
+        response_status, message = self.catalog_data_manager.process()
+        if response_status == CatalogDataManager.ProcessResult.Error:
+            messagebox.showerror("Error processing data!", message)
+        print(message)
         # and actually, if the data doesn't have diversity, we should accept it, but not allow creating parameters
         # the user should be able to reopen the wizard and add more data to variables or whatever
         # then display the catalog data plot form for inspection
@@ -328,8 +335,9 @@ class EnergyPlusPetWindow(Tk):
             return False  # correction data form was cancelled, just move on
         elif cdf.exit_code == CorrectionFactorSummaryForm.ExitCode.Error:
             return False  # if an error occurred, it should have been reported, just abort the data process
-        else:
-            return True  # done/skip indicates the data manager has now gotten any/all updated correction summaries
+        else:  # Done
+            self.cf_summaries = cdf.factor_summaries
+            return True
 
     def start_parameter_thread(self):
         self.var_progress.set(0)

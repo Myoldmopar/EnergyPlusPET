@@ -8,6 +8,7 @@ from tkinter import StringVar
 from tkinter.ttk import Separator
 from typing import List
 
+from energyplus_pet.correction_factor import CorrectionFactor
 from energyplus_pet.forms.correction_summary_widget import CorrectionSummaryWidget
 from energyplus_pet.equipment.base import BaseEquipment
 
@@ -30,11 +31,12 @@ class CorrectionFactorSummaryForm(Toplevel):
     def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
         # store arguments for manipulation here, these are passed by assignment, in this case "by reference"
-        self.summary_widgets: List[CorrectionSummaryWidget] = []
+        self._summary_widgets: List[CorrectionSummaryWidget] = []
+        self.factor_summaries: List[CorrectionFactor] = []
         self._equipment = equipment
         self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error  # initialize with this value
-        self.text_done = 'Done'
-        self.text_skip = 'Skip'
+        self._text_done = 'Done'
+        self._text_skip = 'Skip'
         # create the gui
         self._build_gui()
         # draw factors, in case there already are any
@@ -80,7 +82,7 @@ class CorrectionFactorSummaryForm(Toplevel):
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
         btn_add = Button(button_frame, text="Add Factor", command=self._add_factor_widget)
-        self._txt_done_skip = StringVar(value=self.text_skip)
+        self._txt_done_skip = StringVar(value=self._text_skip)
         btn_ok_skip = Button(button_frame, textvariable=self._txt_done_skip, command=self._done_skip)
         btn_cancel = Button(button_frame, text="Cancel", command=self._cancel)
         # pack everything
@@ -131,7 +133,7 @@ class CorrectionFactorSummaryForm(Toplevel):
         # destroy all widgets from frame
         # for widget in self._correction_factor_inner_frame.winfo_children():
         #     widget.destroy()
-        for i, f in enumerate(self.summary_widgets):
+        for i, f in enumerate(self._summary_widgets):
             f.grid(row=i, column=0, sticky=EW, padx=3, pady=3)
 
     def _add_factor_widget(self):
@@ -141,24 +143,25 @@ class CorrectionFactorSummaryForm(Toplevel):
         new_widget = CorrectionSummaryWidget(
             self._correction_factor_inner_frame, name, self._equipment, self._remove_a_factor
         )
-        self.summary_widgets.append(new_widget)
+        self._summary_widgets.append(new_widget)
         self._redraw_factors()
-        self._txt_done_skip.set(self.text_done)
+        self._txt_done_skip.set(self._text_done)
 
     def _remove_a_factor(self):
         indexes_to_remove = []
-        for i, f in enumerate(self.summary_widgets):
+        for i, f in enumerate(self._summary_widgets):
             if f.remove_me:
                 indexes_to_remove.append(i)
         for i in reversed(indexes_to_remove):
-            self.summary_widgets[i].destroy()
-            del self.summary_widgets[i]
+            self._summary_widgets[i].destroy()
+            del self._summary_widgets[i]
         self._redraw_factors()
-        if len(self.summary_widgets) == 0:
-            self._txt_done_skip.set(self.text_skip)
+        if len(self._summary_widgets) == 0:
+            self._txt_done_skip.set(self._text_skip)
 
     def _done_skip(self):
         self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
+        self.factor_summaries = [x.cf for x in self._summary_widgets]
         self.grab_release()
         self.destroy()
 

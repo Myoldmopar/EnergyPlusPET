@@ -1,32 +1,10 @@
-from enum import Enum, auto
 from tkinter import Button, Frame, Label, LabelFrame, TOP, Spinbox, IntVar, Scrollbar, LEFT, BOTH, RIGHT, EW, \
     VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable
 from tkinter.ttk import Separator
-from typing import List, Callable
+from typing import Callable
 
+from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.equipment.base import BaseEquipment
-
-
-class CorrectionFactorType(Enum):
-    Multiplier = auto()
-    Replacement = auto()
-
-
-class CorrectionFactor:
-    def __init__(self, name: str, eq: BaseEquipment):
-        self.name = name
-        self.equip_instance = eq
-        # Once we start supporting the wb/db replacement, we'll need to check from the equipment instance
-        # to see if it should be offered for this catalog data.  Then we'll need to track whether the user
-        # wants it for this particular correction factor.  Then if so I think we need to track the db/wb value separate.
-        # The following are the variables that define this correction factor summary, initialize them as needed and the
-        # widget should reflect the initialized values by setting Tk Variables appropriately.
-        self.num_corrections: int = 5
-        # self.correction_is_wb_db: bool
-        # self.correction_db_value: float
-        self.correction_type: CorrectionFactorType = CorrectionFactorType.Multiplier
-        self.base_column_index: int = 0
-        self.columns_to_modify: List[int] = []
 
 
 class CorrectionSummaryWidget(LabelFrame):
@@ -36,10 +14,11 @@ class CorrectionSummaryWidget(LabelFrame):
 
     def __init__(self, parent: Frame, name: str, equipment_instance: BaseEquipment, remove_callback: Callable):
         super().__init__(parent, name=name, text=name)
-        self.cf = CorrectionFactor(name, equipment_instance)
+        self.cf = CorrectionFactor(name)
+        self.equip_instance = equipment_instance
 
         # these are Tk variables for tracking dynamic changes and tracing
-        self.var_base_column = StringVar(value=self.cf.equip_instance.headers().name_array()[self.cf.base_column_index])
+        self.var_base_column = StringVar(value=self.equip_instance.headers().name_array()[self.cf.base_column_index])
         self.var_num_corrections = IntVar(value=self.cf.num_corrections)
         # self.wb_db_var = BooleanVar(value=False)
         self.var_mod_type = StringVar(value=self.cf.correction_type.name)
@@ -63,7 +42,7 @@ class CorrectionSummaryWidget(LabelFrame):
         elif self.var_mod_type.get() == CorrectionFactorType.Replacement.name:
             self.cf.correction_type = CorrectionFactorType.Replacement
         mod_column = self.var_base_column.get()
-        self.cf.base_column_index = self.cf.equip_instance.headers().name_array().index(mod_column)
+        self.cf.base_column_index = self.equip_instance.headers().name_array().index(mod_column)
         self.cf.columns_to_modify = self.columns_listbox.curselection()
 
     def _setup_removal_callback(self, remove_callback: Callable):
@@ -106,7 +85,7 @@ class CorrectionSummaryWidget(LabelFrame):
         Separator(self, orient=VERTICAL).grid(
             row=0, column=1, rowspan=4, sticky=NS, padx=p, pady=p
         )
-        options = Variable(value=self.cf.equip_instance.headers().name_array())
+        options = Variable(value=self.equip_instance.headers().name_array())
         Label(self, text="Base data column for this correction factor:").grid(
             row=0, column=2, padx=p, pady=p
         )
@@ -118,6 +97,7 @@ class CorrectionSummaryWidget(LabelFrame):
         )
         columns_frame = Frame(self)
         self.columns_listbox = Listbox(columns_frame, height=5, listvariable=options, selectmode=MULTIPLE)
+        self.columns_listbox.configure(exportselection=False)
         self.columns_listbox.pack(side=LEFT, fill=BOTH, expand=True, padx=p, pady=3)
         self.columns_listbox.bind('<<ListboxSelect>>', self._update_from_traces)
         columns_scroll = Scrollbar(columns_frame)
@@ -133,4 +113,4 @@ class CorrectionSummaryWidget(LabelFrame):
         self.remove_callback()
 
     def description(self):
-        return f"CorrectionFactor {self.cf.equip_instance.name}; {self.cf.num_corrections} corrections"
+        return f"CorrectionFactor {self.equip_instance.name}; {self.cf.num_corrections} corrections"
