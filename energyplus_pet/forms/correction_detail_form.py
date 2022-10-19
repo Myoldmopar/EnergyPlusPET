@@ -53,24 +53,28 @@ class DetailedCorrectionFactorForm(Toplevel):
         #
         self.tabular_frame = Frame(self)
         # TODO: Does db/wb get two independent value columns?
-        column_titles = [eq.headers().name_array()[cf.base_column_index]]
-        for mod_column in cf.columns_to_modify:
+        column_titles = [eq.headers().name_array()[_cf.base_column_index]]
+        for mod_column in _cf.columns_to_modify:
             column_titles.append(eq.headers().name_array()[mod_column])
-        column_units = [eq.headers().unit_array()[cf.base_column_index]]
-        for mod_column in cf.columns_to_modify:
+        column_units = [eq.headers().unit_array()[_cf.base_column_index]]
+        for mod_column in _cf.columns_to_modify:
             column_units.append(eq.headers().unit_array()[mod_column])
         # TODO: should the following be +2 for db/wb replacement?
         self.table = Sheet(self.tabular_frame)
         pretend_data = []
-        for row in range(cf.num_corrections + 1):
+        self.columnar_preferred_unit_strings = []  # keep this for convenience
+        self.columnar_units_are_preferred = []
+        for row in range(_cf.num_corrections + 1):
             this_row = []
             if row == 0:
-                for col in range(len(cf.columns_to_modify) + 1):
+                for col in range(len(_cf.columns_to_modify) + 1):
                     unit_type = column_units[col]
                     unit_instance = unit_instance_factory(0.0, unit_type)
                     preferred_unit = unit_instance.calculation_unit()
                     all_unit_strings = unit_instance.get_unit_strings()
                     preferred_unit_string = all_unit_strings[preferred_unit]
+                    self.columnar_preferred_unit_strings.append(preferred_unit_string)
+                    self.columnar_units_are_preferred.append(True)
                     this_row.append(f"{preferred_unit_string}")
                     self.table.create_dropdown(
                         r=row,
@@ -79,17 +83,19 @@ class DetailedCorrectionFactorForm(Toplevel):
                         set_value=preferred_unit_string,
                         state="readonly",
                         redraw=False,
-                        selection_function=None,
+                        selection_function=self._units_dropdown_changed,
                         modified_function=None
                     )
             else:
-                for col in range(len(cf.columns_to_modify) + 1):
+                for col in range(len(_cf.columns_to_modify) + 1):
                     this_row.append(f"{row},{col}")
             pretend_data.append(this_row)
         self.table.headers(column_titles)
         self.table.set_sheet_data(pretend_data)
         self.table.enable_bindings()
         self.table.set_options(expand_sheet_if_paste_too_big=False)
+        self.table.hide(canvas="row_index")
+        self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         # https://github.com/ragardner/tksheet/blob/master/DOCUMENTATION.md#25-example-custom-right-click-and-text-editor-functionality
@@ -130,6 +136,18 @@ class DetailedCorrectionFactorForm(Toplevel):
         # self.wait_visibility()
         # self.grab_set()
         # self.transient(parent_window)
+
+    def _units_dropdown_changed(self, edit_cell_event):
+        this_column = edit_cell_event.column
+        self.need_to_conform_units = False
+        for c in range(self.table.total_columns()):
+            if c == this_column:
+                units_value_this_column = edit_cell_event.text  # currently being modified
+            else:
+                units_value_this_column = self.table.get_cell_data(0, c)  # just get the data from the cell
+            if units_value_this_column != self.columnar_preferred_unit_strings[c]:
+                self.need_to_conform_units = True
+        self.refresh_done_conform_button_text()
 
     def refresh_done_conform_button_text(self):
         if self.need_to_conform_units:
