@@ -13,6 +13,7 @@ from typing import List
 from webbrowser import open as browser_open
 
 from energyplus_pet import NICE_NAME, VERSION
+from energyplus_pet.forms.correction_detail_form import DetailedCorrectionFactorForm
 from energyplus_pet.correction_factor import CorrectionFactor
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
@@ -304,9 +305,11 @@ class EnergyPlusPetWindow(Tk):
             # TODO: Need to create a new form, modal, and check the response; if cancel then abort
             # Do we need to reset the catalog data at all?
             # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
-            # cf_detailed = CorrectionFactorDetailedForm(self) # modal, blah
-            form_opening_and_such = cf
-            self.catalog_data_manager.add_correction_factor(form_opening_and_such)
+            cfd_form = DetailedCorrectionFactorForm(self, cf, self.selected_equip_instance)
+            self.wait_window(cfd_form)
+            if cfd_form.exit_code == DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel:
+                return
+            self.catalog_data_manager.add_correction_factor(cfd_form.completed_factor)
         # now that we have the full correction factor details, we need to collect the main catalog data
         # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
         base_data = []

@@ -130,9 +130,6 @@ class CorrectionFactorSummaryForm(Toplevel):
             self._factor_canvas.unbind_all(Event.WindowsWheelEvent)
 
     def _redraw_factors(self):
-        # destroy all widgets from frame
-        # for widget in self._correction_factor_inner_frame.winfo_children():
-        #     widget.destroy()
         for i, f in enumerate(self._summary_widgets):
             f.grid(row=i, column=0, sticky=EW, padx=3, pady=3)
 

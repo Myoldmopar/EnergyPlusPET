@@ -15,7 +15,7 @@ class ColumnHeader:
         :param wb: An optional bool flag for whether this column is an air wet-bulb column
         """
         self.name = column_name
-        self.units = unit
+        self.units = unit  # TODO: Kinda wonder if this should be a unit instance, not sure though
         self.dry_bulb_column_flag = db
         self.wet_bulb_column_flag = wb
 
