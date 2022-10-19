@@ -1,5 +1,6 @@
 from enum import auto, Enum
-from typing import List
+from json import dumps
+from typing import Dict, List
 
 
 class CorrectionFactorType(Enum):
@@ -16,12 +17,28 @@ class CorrectionFactor:
         # The following are the variables that define this correction factor summary, initialize them as needed and the
         # widget should reflect the initialized values by setting Tk Variables appropriately.
         self.num_corrections: int = 5
-        # self.correction_is_wb_db: bool
-        # self.correction_db_value: float
+        self.correction_is_wb_db: bool = False
         self.correction_type: CorrectionFactorType = CorrectionFactorType.Multiplier
         self.base_column_index: int = 0
-        self.columns_to_modify: List[int] = []
+        self._columns_to_modify: List[int] = []
+        # the rest of this data comes from the detail form
+        self.correction_db_value: float
+        self.base_correction: List[float] = []  # could be multipliers or replacement values
+        self.mod_correction_data_column_map: Dict[int, List[float]] = {}
+
+    def set_columns_to_modify(self, mod_column_indices: List[int]) -> None:
+        self._columns_to_modify = mod_column_indices
+        for i in mod_column_indices:
+            self.mod_correction_data_column_map[i] = []
+
+    def get_columns_to_modify(self) -> List[int]:
+        return self._columns_to_modify
 
     def describe(self) -> str:
-        return f"CorrectionFactor: {self.name}, {self.num_corrections} {self.correction_type.name} rows, base column " \
-               f"{self.base_column_index}, modifies columns {self.columns_to_modify}"
+        return f"""CorrectionFactor: {self.name}
+* {self.num_corrections} {self.correction_type.name} rows
+* base column {self.base_column_index}
+* modifies columns {self._columns_to_modify}
+* Base Correction Array {self.base_correction}
+* Mod Correction Matrix:
+{dumps(self.mod_correction_data_column_map, indent=2)}"""

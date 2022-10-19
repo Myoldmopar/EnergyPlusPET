@@ -1,6 +1,7 @@
 from json import dumps
-from time import sleep
 from typing import Callable, List, Tuple
+
+from scipy.optimize import curve_fit
 
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
@@ -13,7 +14,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
 
     def __init__(self):
         # need some rated parameters that we get from the user for scaling, reporting, etc.
-        self.rated_load_volume_flow_rate = FlowUnits(
+        self.rated_load_volume_flow_rate = FlowUnits(  # TODO: Get these from a form!
             0.0006887, "Rated Load Side Flow Rate",
             "This is a nominal flow rate value for the load-side of the heat pump"
         )
@@ -38,18 +39,24 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         self.catalog_compressor_power = []
         self.catalog_source_side_heat_absorption = []
         # these are matrices in the original code, here just store the final vector
-        self.c1 = [0.0] * 5
-        self.c2 = [0.0] * 5
+        self.heating_capacity_params = []
+        self.compressor_power_params = []
         # store the predicted outputs that are calculated from the generated parameters
         self.predicted_load_side_heating_capacity = []
         self.predicted_compressor_power = []
         self.predicted_source_side_heat_absorption = []
+        self.percent_error_load_side_heating_capacity = []
+        self.percent_error_compressor_power = []
+        self.percent_error_source_side_heat_absorption = []
 
     def this_type(self) -> EquipType:
         return EquipType.WAHP_Heating_CurveFit
 
     def name(self) -> str:
         return "Water to Air Heat Pump, Heating Mode, Curve Fit Formulation"
+
+    def short_name(self) -> str:
+        return "WAHP-Heating-CurveFit"
 
     def required_constant_parameters(self) -> List[BaseUnit]:
         return [
@@ -84,8 +91,8 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
             self.rated_total_capacity.value,
             round(self.rated_total_capacity.value / self.rated_compressor_power.value, 4),
         ]
-        fields.extend(self.c1)
-        fields.extend(self.c1)
+        fields.extend(self.heating_capacity_params)
+        fields.extend(self.compressor_power_params)
         fields.append('Your Heat Pump Cycle Time')
         form = """HeatPump:WaterToAir:EquationFit:Heating,
 {0},{1}!-Name
@@ -135,9 +142,9 @@ Rated Heating Power Consumption: {self.rated_compressor_power}
 Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate}
 Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         """
-        for i, c in enumerate(self.c1):
+        for i, c in enumerate(self.heating_capacity_params):
             output += f"Heating Capacity Coefficient HC_{i + 1}: {round(c, 4)}\n"
-        for i, c in enumerate(self.c2):
+        for i, c in enumerate(self.compressor_power_params):
             output += f"Heating Power Consumption Coefficient HC_{i + 1}: {round(c, 4)}\n"
         output += "**End Reporting Parameters**"
         return output
@@ -155,8 +162,10 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             'cycle_time': -999
         }
         capacity_coefficient_dict = {f"heating_capacity_coefficient_{i + 1}": round(c, 4) for i, c in
-                                     enumerate(self.c1)}
-        power_coefficient_dict = {f"compressor_power_coefficient_{i + 1}": round(c, 4) for i, c in enumerate(self.c2)}
+                                     enumerate(self.heating_capacity_params)}
+        power_coefficient_dict = {
+            f"compressor_power_coefficient_{i + 1}": round(c, 4) for i, c in enumerate(self.compressor_power_params)
+        }
         epjson_object = {
             'WAHP:Heating:CurveFit': {
                 'Your Coil Name': {
@@ -170,28 +179,147 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
             cb_progress_increment: Callable, cb_progress_done: Callable
     ):
-        cb_progress_initialize(3)
-        for i in range(3):
-            sleep(0.3)
-            cb_progress_increment()
+        cb_progress_initialize(4)  # read data, hc curve fit, power curve fit, calc predicted data
+
+        # step 1, read the data into arrays (will be used for both scaling calculations and plotting later)
+        # these should already be set to zero, but not sure if the main form will reinitialize the equip-instance or not
+        self.catalog_source_side_inlet_temp = []
+        self.catalog_source_side_volume_flow_rate = []
+        self.catalog_load_side_inlet_temp = []
+        self.catalog_load_side_volume_flow_rate = []
+        self.catalog_load_side_heating_capacity = []
+        self.catalog_compressor_power = []
+        self.catalog_source_side_heat_absorption = []
+        scaled_source_side_inlet_temp = []
+        scaled_source_side_flow_rate = []
+        scaled_load_side_inlet_temp = []
+        scaled_load_side_flow_rate = []
+        scaled_heating_capacity = []
+        scaled_compressor_power = []
+        ones = []
+        for data_row in data_manager.final_data_matrix:
+            self.catalog_source_side_inlet_temp.append(data_row[0])
+            self.catalog_source_side_volume_flow_rate.append(data_row[1])
+            self.catalog_load_side_inlet_temp.append(data_row[2])
+            self.catalog_load_side_volume_flow_rate.append(data_row[3])
+            self.catalog_load_side_heating_capacity.append(data_row[4])
+            self.catalog_compressor_power.append(data_row[5])
+            self.catalog_source_side_heat_absorption.append(data_row[6])
+            scaled_source_side_inlet_temp.append((data_row[0] + 273.15) / (10.0 + 273.15))  # T_ref defined by HP model
+            scaled_source_side_flow_rate.append(data_row[1] / self.rated_source_volume_flow_rate.value)
+            scaled_load_side_inlet_temp.append((data_row[2] + 273.15) / (10.0 + 273.15))
+            scaled_load_side_flow_rate.append(data_row[3] / self.rated_load_volume_flow_rate.value)
+            scaled_heating_capacity.append(data_row[4] / self.rated_total_capacity.value)
+            scaled_compressor_power.append(data_row[5] / self.rated_compressor_power.value)
+            ones.append(1.0)
+        cb_progress_increment()
+
+        def evaluate_expression(x, a, b, c, d, e):
+            """
+            Evaluates:  Y / Y_rated = A*(1.0) + B*(TLI/TLI_R) + C*(TSI/TSI_R) + D*(VLI/VLI_R) + E*(VSI/VSI_R)
+            Where Y would represent any of the desired dependent variables, such as Q or Power
+
+            :param x: tuple of independent variables, (1.0, TLI/TLI_R, TSI/TSI_R, VLI/VLI_R, VSI/VSI_R)
+            :param a: coefficient A in the above equation
+            :param b: coefficient B in the above equation
+            :param c: coefficient C in the above equation
+            :param d: coefficient D in the above equation
+            :param e: coefficient E in the above equation
+            :return: Scaled dependent variable, such as Q/Q_rated
+            """
+            return a * x[0] + b * x[1] + c * x[2] + d * x[3] + e * x[4]
+
+        heating_capacity_params = curve_fit(
+            evaluate_expression,
+            (
+                ones,
+                scaled_load_side_inlet_temp,
+                scaled_source_side_inlet_temp,
+                scaled_load_side_flow_rate,
+                scaled_source_side_flow_rate
+            ),
+            scaled_heating_capacity
+        )[0]
+        self.heating_capacity_params = list(heating_capacity_params)
+        cb_progress_increment()
+        compressor_power_params = curve_fit(
+            evaluate_expression,
+            (
+                ones,
+                scaled_load_side_inlet_temp,
+                scaled_source_side_inlet_temp,
+                scaled_load_side_flow_rate,
+                scaled_source_side_flow_rate
+            ),
+            scaled_compressor_power
+        )[0]
+        self.compressor_power_params = list(heating_capacity_params)
+        cb_progress_increment()
+
+        # should be empty, but just reset to be sure
+        self.predicted_load_side_heating_capacity = []
+        self.predicted_compressor_power = []
+        self.predicted_source_side_heat_absorption = []
+        self.percent_error_load_side_heating_capacity = []
+        self.percent_error_compressor_power = []
+        self.percent_error_source_side_heat_absorption = []
+        for i in range(len(data_manager.final_data_matrix)):
+            self.predicted_load_side_heating_capacity.append(evaluate_expression(
+                (
+                    ones[i],
+                    scaled_load_side_inlet_temp[i],
+                    scaled_source_side_inlet_temp[i],
+                    scaled_load_side_flow_rate[i],
+                    scaled_source_side_flow_rate[i]
+                ),
+                heating_capacity_params[0],
+                heating_capacity_params[1],
+                heating_capacity_params[2],
+                heating_capacity_params[3],
+                heating_capacity_params[4]
+            ))
+            self.predicted_compressor_power.append(evaluate_expression(
+                (
+                    ones[i],
+                    scaled_load_side_inlet_temp[i],
+                    scaled_source_side_inlet_temp[i],
+                    scaled_load_side_flow_rate[i],
+                    scaled_source_side_flow_rate[i]
+                ),
+                compressor_power_params[0],
+                compressor_power_params[1],
+                compressor_power_params[2],
+                compressor_power_params[3],
+                compressor_power_params[4]
+            ))
+            self.predicted_source_side_heat_absorption.append(
+                self.predicted_load_side_heating_capacity[i] - self.predicted_compressor_power[i]
+            )
+            self.percent_error_load_side_heating_capacity.append(
+                100.0 * (self.predicted_load_side_heating_capacity[i] - self.catalog_load_side_heating_capacity[i]) /
+                self.catalog_load_side_heating_capacity[i]
+            )
+            self.percent_error_compressor_power.append(
+                100.0 * (self.predicted_compressor_power[i] - self.catalog_compressor_power[i]) /
+                self.catalog_compressor_power[i]
+            )
+            self.percent_error_source_side_heat_absorption.append(
+                100.0 * (self.predicted_source_side_heat_absorption[i] - self.catalog_source_side_heat_absorption[i]) /
+                self.catalog_source_side_heat_absorption[i]
+            )
+        cb_progress_increment()
         cb_progress_done(True)
 
     def get_absolute_plot_data(self) -> Tuple:
         return (
-            ('Total Heat Transfer Model Output', 'line', 'red', [0.7, 1.9, 3.4, 4.1, 5.6, 5.9]),
-            ('Total Heat Transfer Catalog Output', 'point', 'red', [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),
-            ('Compressor Power Model Output', 'line', 'green', [1.7, 2.9, 4.4, 3.1, 7.6, 6.9]),
-            ('Compressor Power Catalog Output', 'point', 'green', [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]),
+            ('Total Heat Transfer Model Output', 'line', 'red', self.predicted_load_side_heating_capacity),
+            ('Total Heat Transfer Catalog Input', 'point', 'red', self.catalog_load_side_heating_capacity),
+            ('Compressor Power Model Output', 'line', 'green', self.predicted_compressor_power),
+            ('Compressor Power Catalog Input', 'point', 'green', self.catalog_compressor_power),
         )
 
     def get_error_plot_data(self) -> Tuple:
-        total_heat_model = [0.7, 1.9, 3.4, 4.1, 5.6, 5.9]
-        total_heat_catalog = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
-        comp_power_model = [1.7, 2.9, 4.4, 3.1, 7.6, 6.9]
-        comp_power_catalog = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
-        error_total = [100.0 * (total_heat_model[i] - total_heat_catalog[i]) / total_heat_catalog[i] for i in range(6)]
-        error_power = [100.0 * (comp_power_model[i] - comp_power_catalog[i]) / comp_power_catalog[i] for i in range(6)]
         return (
-            ('Total Heat Transfer % Error', 'line', 'red', error_total),
-            ('Compressor Power % Error', 'line', 'green', error_power),
+            ('Total Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_heating_capacity),
+            ('Compressor Power % Error', 'line', 'green', self.percent_error_compressor_power),
         )

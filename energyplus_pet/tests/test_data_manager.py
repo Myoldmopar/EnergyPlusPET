@@ -9,7 +9,7 @@ class TestDataManager(TestCase):
         cdm = CatalogDataManager()
         cf = CorrectionFactor('blah')
         cdm.add_correction_factor(cf)
-        cdm.add_base_data([[0.0]])
+        cdm.add_base_data([])
         status, message = cdm.process()
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertIsInstance(message, str)

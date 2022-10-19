@@ -64,7 +64,6 @@ class ConstantParameterEntryForm(Toplevel):
         button_frame.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         self.check_all_units()
         # finalize UI operations
-        self.wait_visibility()
         self.grab_set()
         self.transient(parent_window)
 

@@ -23,6 +23,7 @@ from energyplus_pet.forms.correction_summary_form import CorrectionFactorSummary
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
 from energyplus_pet.forms.catalog_plot import CatalogDataPlotForm
 from energyplus_pet.forms.comparison_plot import ComparisonPlot
+from energyplus_pet.forms.main_data_form import MainDataForm
 
 
 class EnergyPlusPetWindow(Tk):
@@ -301,22 +302,24 @@ class EnergyPlusPetWindow(Tk):
         if not self.get_correction_factor_summaries():
             return
         # if that was successful, loop over each local summary and open individual correction entry forms for each
-        for cf in self.cf_summaries:
+        for cf_num, cf in enumerate(self.cf_summaries):
             # TODO: Need to create a new form, modal, and check the response; if cancel then abort
             # Do we need to reset the catalog data at all?
-            # TODO: The tables in the GUIs here shouldn't allow manual entry, right?
-            cfd_form = DetailedCorrectionFactorForm(self, cf, self.selected_equip_instance)
+            # TODO: The tables in the GUIs here shouldn't allow manual extension, right?
+            cfd_form = DetailedCorrectionFactorForm(
+                self, cf, self.selected_equip_instance, cf_num, len(self.cf_summaries)
+            )
             self.wait_window(cfd_form)
             if cfd_form.exit_code == DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel:
                 return
+            print(cfd_form.completed_factor.describe())
             self.catalog_data_manager.add_correction_factor(cfd_form.completed_factor)
         # now that we have the full correction factor details, we need to collect the main catalog data
-        # main_catalog_data_form = CatalogDataForm(self)  # modal, blah
-        base_data = []
-        for row in range(10):
-            this_row = [3.14 * row] * len(self.selected_equip_instance.headers())
-            base_data.append(this_row)
-        self.catalog_data_manager.add_base_data(base_data)
+        main_catalog_data_form = MainDataForm(self, self.selected_equip_instance)
+        self.wait_window(main_catalog_data_form)
+        if main_catalog_data_form.exit_code == MainDataForm.MainDataExitCode.Cancel:
+            return
+        self.catalog_data_manager.add_base_data(main_catalog_data_form.final_base_data_rows)
         # then process the base data and correction factors into a full data set
         response_status, message = self.catalog_data_manager.process()
         if response_status == CatalogDataManager.ProcessResult.Error:
@@ -325,7 +328,7 @@ class EnergyPlusPetWindow(Tk):
         # and actually, if the data doesn't have diversity, we should accept it, but not allow creating parameters
         # the user should be able to reopen the wizard and add more data to variables or whatever
         # then display the catalog data plot form for inspection
-        cdf = CatalogDataPlotForm(self, self.catalog_data_manager)
+        cdf = CatalogDataPlotForm(self, self.catalog_data_manager, self.selected_equip_instance)
         cdf.wait_window()
         self._refresh_gui_state()
         self.update_status_bar('Processed Catalog Data')

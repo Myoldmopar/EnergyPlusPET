@@ -42,18 +42,16 @@ class CorrectionFactorSummaryForm(Toplevel):
         # draw factors, in case there already are any
         self._redraw_factors()
         # finalize UI operations
-        self.wait_visibility()
         self.grab_set()
         self.transient(parent_window)
 
     def _build_gui(self):
-        lbl = Label(self, text="""In order to estimate parameters, all data categories should have at least two values.
-        If all values are constant, a curve fit cannot be generated.
-        It is common for manufacturers to only give a constant value for certain data.
-        This is typically entering temperatures or flow rates.
-        They will then give correction factor data in order to modify this value.
-        These correction factors can be new flow rate/temperature values, or multipliers from the base values.
-        If you have any correction factors, add them here, otherwise, press done to continue.""")
+        lbl = Label(self, text="""All data columns should have at least two values.
+Without this variation, a curve fit cannot be generated.
+Manufacturers often provide tabular data at fixed temperatures/flow.
+However, there is often correction factor data that can add variation.
+These factors modify the "constant" temp/flow values by replacement or multiplying.
+If you have any correction factors, add them here, otherwise, press done to continue.""")
         s_0 = Separator(self, orient=HORIZONTAL)
         #
         correction_factor_outer_frame = Frame(self)
@@ -137,6 +135,7 @@ class CorrectionFactorSummaryForm(Toplevel):
         name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
         if name is None:
             return
+        name = name.lower()
         new_widget = CorrectionSummaryWidget(
             self._correction_factor_inner_frame, name, self._equipment, self._remove_a_factor
         )

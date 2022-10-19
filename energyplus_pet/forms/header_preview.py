@@ -38,7 +38,6 @@ class RequiredDataPreviewForm(Toplevel):
         button_frame.grid_columnconfigure(2, weight=1)
         button_frame.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         # finalize UI operations
-        self.wait_visibility()
         self.grab_set()
         self.transient(parent_window)
 
