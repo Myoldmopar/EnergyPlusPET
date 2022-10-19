@@ -24,6 +24,9 @@ class BaseEquipment:
     def required_constant_parameters(self) -> List[BaseUnit]: pass
 
     @abstractmethod
+    def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None: pass
+
+    @abstractmethod
     def to_eplus_idf_object(self) -> str: pass
 
     @abstractmethod

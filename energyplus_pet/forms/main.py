@@ -19,6 +19,7 @@ from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.manager import EquipmentFactory
 from energyplus_pet.equipment.equip_types import EquipType, EquipTypeUniqueStrings as ETString
+from energyplus_pet.forms.constant_parameters import ConstantParameterEntryForm
 from energyplus_pet.forms.correction_summary_form import CorrectionFactorSummaryForm
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
 from energyplus_pet.forms.catalog_plot import CatalogDataPlotForm
@@ -324,7 +325,13 @@ class EnergyPlusPetWindow(Tk):
         response_status, message = self.catalog_data_manager.process()
         if response_status == CatalogDataManager.ProcessResult.Error:
             messagebox.showerror("Error processing data!", message)
-        print(message)
+            return
+        cde = ConstantParameterEntryForm(self, self.selected_equip_instance)
+        self.wait_window(cde)
+        if cde.form_cancelled:
+            return
+        for k, v in cde.parameter_value_map.items():
+            self.selected_equip_instance.set_required_constant_parameter(k, v)
         # and actually, if the data doesn't have diversity, we should accept it, but not allow creating parameters
         # the user should be able to reopen the wizard and add more data to variables or whatever
         # then display the catalog data plot form for inspection

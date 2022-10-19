@@ -59,12 +59,26 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         return "WAHP-Heating-CurveFit"
 
     def required_constant_parameters(self) -> List[BaseUnit]:
+        # TODO: CDM should hold a dict of strings and values or something, and the equipment can decode it here
         return [
             self.rated_load_volume_flow_rate,
             self.rated_source_volume_flow_rate,
             self.rated_total_capacity,
             self.rated_compressor_power
         ]
+
+    def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None:
+        my_param_names = self.required_constant_parameters()
+        if parameter_name == my_param_names[0].name:
+            self.rated_load_volume_flow_rate.value = new_value
+        elif parameter_name == my_param_names[1].name:
+            self.rated_source_volume_flow_rate.value = new_value
+        elif parameter_name == my_param_names[2].name:
+            self.rated_total_capacity.value = new_value
+        elif parameter_name == my_param_names[3].name:
+            self.rated_compressor_power.value = new_value
+        else:
+            pass  # ERROR
 
     def headers(self) -> ColumnHeaderArray:
         return ColumnHeaderArray(
@@ -253,7 +267,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ),
             scaled_compressor_power
         )[0]
-        self.compressor_power_params = list(heating_capacity_params)
+        self.compressor_power_params = list(compressor_power_params)
         cb_progress_increment()
 
         # should be empty, but just reset to be sure
@@ -264,7 +278,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         self.percent_error_compressor_power = []
         self.percent_error_source_side_heat_absorption = []
         for i in range(len(data_manager.final_data_matrix)):
-            self.predicted_load_side_heating_capacity.append(evaluate_expression(
+            self.predicted_load_side_heating_capacity.append(self.rated_total_capacity.value * evaluate_expression(
                 (
                     ones[i],
                     scaled_load_side_inlet_temp[i],
@@ -278,7 +292,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
                 heating_capacity_params[3],
                 heating_capacity_params[4]
             ))
-            self.predicted_compressor_power.append(evaluate_expression(
+            self.predicted_compressor_power.append(self.rated_compressor_power.value * evaluate_expression(
                 (
                     ones[i],
                     scaled_load_side_inlet_temp[i],

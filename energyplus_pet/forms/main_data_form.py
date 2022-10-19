@@ -100,7 +100,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         self.table.headers(column_titles)
         self.table.set_sheet_data(pretend_data)
         self.table.enable_bindings()
-        self.table.set_options(expand_sheet_if_paste_too_big=False)
+        self.table.set_options(expand_sheet_if_paste_too_big=True)
         self.table.hide(canvas="row_index")
         self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)

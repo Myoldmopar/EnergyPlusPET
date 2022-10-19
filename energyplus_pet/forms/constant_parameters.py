@@ -45,7 +45,9 @@ class ConstantParameterEntryForm(Toplevel):
     def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window)
         self.form_cancelled = True
+        self.equipment = equipment
         entries_form = LabelFrame(self, text="Required Parameters")
+        self.parameter_value_map = {}
         self.known_parameters = []
         for rp in equipment.required_constant_parameters():
             c = ConstantParameterEntryWidget(rp, entries_form, self.check_all_units)
@@ -83,6 +85,8 @@ class ConstantParameterEntryForm(Toplevel):
             self.check_all_units()
         else:
             self.form_cancelled = False
+            for rp in self.known_parameters:
+                self.parameter_value_map[rp.value.name] = rp.var_value.get()
             self.close_me()
 
     def close_me(self):
