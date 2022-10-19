@@ -21,6 +21,7 @@ class DetailedCorrectionFactorForm(Toplevel):
         super().__init__(parent_window, height=200, width=200)
         p = 4
         self.completed_factor = _cf
+        self.equipment_instance = eq
         self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
         self.need_to_conform_units = False
         # create all the objects
@@ -62,6 +63,8 @@ class DetailedCorrectionFactorForm(Toplevel):
         # TODO: should the following be +2 for db/wb replacement?
         self.table = Sheet(self.tabular_frame)
         pretend_data = []
+        # TODO: Can we just tag a column with a dict of extra data rather than separate lists?
+        self.columnar_unit_types = []
         self.columnar_preferred_unit_strings = []  # keep this for convenience
         self.columnar_units_are_preferred = []
         for row in range(_cf.num_corrections + 1):
@@ -73,6 +76,7 @@ class DetailedCorrectionFactorForm(Toplevel):
                     preferred_unit = unit_instance.calculation_unit()
                     all_unit_strings = unit_instance.get_unit_strings()
                     preferred_unit_string = all_unit_strings[preferred_unit]
+                    self.columnar_unit_types.append(unit_type)
                     self.columnar_preferred_unit_strings.append(preferred_unit_string)
                     self.columnar_units_are_preferred.append(True)
                     this_row.append(f"{preferred_unit_string}")
@@ -88,7 +92,8 @@ class DetailedCorrectionFactorForm(Toplevel):
                     )
             else:
                 for col in range(len(_cf.columns_to_modify) + 1):
-                    this_row.append(f"{row},{col}")
+                    # this_row.append(f"{row},{col}")
+                    this_row.append(row * col)
             pretend_data.append(this_row)
         self.table.headers(column_titles)
         self.table.set_sheet_data(pretend_data)
@@ -154,6 +159,7 @@ class DetailedCorrectionFactorForm(Toplevel):
             self.done_conform_text.set("Conform")
         else:
             self.done_conform_text.set("Done")
+        self.table.redraw()
 
     def _update_from_traces(self):
         pass
@@ -167,7 +173,28 @@ class DetailedCorrectionFactorForm(Toplevel):
             self.destroy()
 
     def conform_units(self):
-        pass
+        """This is a pretty convoluted way to do this, think harder"""
+        for c in range(self.table.total_columns()):
+            units_value_this_column = self.table.get_cell_data(0, c)
+            if units_value_this_column != self.columnar_preferred_unit_strings[c]:
+                # create a dummy value for this unit type -- wrong
+                unit_instance_this_column = unit_instance_factory(0.0, self.columnar_unit_types[c])
+                # get the full set of unit strings to look the index back up
+                unit_strings = unit_instance_this_column.get_unit_strings()
+                units_index_now = unit_strings.index(units_value_this_column)
+                for r in range(self.table.total_rows()):
+                    # if r == 0:
+                    #     pass
+                    if r == 0:
+                        self.table.set_cell_data(r, c, unit_strings[unit_instance_this_column.calculation_unit()])
+                    else:
+                        cell_value = float(self.table.get_cell_data(r, c))
+                        unit_value = unit_instance_factory(cell_value, self.columnar_unit_types[c])
+                        unit_value.units = units_index_now
+                        unit_value.convert_to_calculation_unit()
+                        self.table.set_cell_data(r, c, unit_value.value)
+        self.need_to_conform_units = False
+        self.refresh_done_conform_button_text()
 
     def cancel(self):
         self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel
