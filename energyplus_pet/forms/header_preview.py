@@ -9,15 +9,9 @@ from energyplus_pet.equipment.base import BaseEquipment
 class RequiredDataPreviewForm(Toplevel):
     def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window)
+        self.title(f"{parent_window.title()}: Header Data Summary")
         self.summary = equipment.headers().get_descriptive_summary()
         self.csv = equipment.headers().get_descriptive_csv()
-        header_string = ""
-        column_names = equipment.headers().name_array()
-        for h in column_names:
-            if h == column_names[-1]:
-                header_string += h
-            else:
-                header_string += f"{h}\n"
         Label(self, text=equipment.name()).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         Label(self, text="Data columns listed here\nData can be entered in any common units").pack(

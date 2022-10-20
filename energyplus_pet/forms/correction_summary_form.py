@@ -30,6 +30,7 @@ class CorrectionFactorSummaryForm(Toplevel):
 
     def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
+        self.title(f"{parent_window.title()}: Correction Factor Summary Input")
         # store arguments for manipulation here, these are passed by assignment, in this case "by reference"
         self._summary_widgets: List[CorrectionSummaryWidget] = []
         self.factor_summaries: List[CorrectionFactor] = []

@@ -25,7 +25,7 @@ class DetailedCorrectionFactorForm(Toplevel):
         self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
         self.need_to_conform_units = False
         # create all the objects
-        self.title(f"Enter Correction Factor Data {cf_num}/{num_cfs}")
+        self.title(f"{parent_window.title()}: Enter Correction Factor Data {cf_num}/{num_cfs}")
         m_or_r = 'multiplier' if _cf.correction_type == CorrectionFactorType.Multiplier else 'replacement'
         base_column_name = eq.headers().name_array()[_cf.base_column_index]
         dep_column_names = ""

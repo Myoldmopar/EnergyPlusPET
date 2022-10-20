@@ -44,6 +44,7 @@ class ConstantParameterEntryForm(Toplevel):
 
     def __init__(self, parent_window, equipment: BaseEquipment):
         super().__init__(parent_window)
+        self.title(f"{parent_window.title()}: Rated/Constant Parameter Entry")
         self.form_cancelled = True
         self.equipment = equipment
         entries_form = LabelFrame(self, text="Required Parameters")

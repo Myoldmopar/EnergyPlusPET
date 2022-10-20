@@ -88,8 +88,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
                 ColumnHeader("Load Side Entering Temp", UnitType.Temperature),
                 ColumnHeader("Load Side Flow Rate", UnitType.Flow),
                 ColumnHeader("Load Side Heating Capacity", UnitType.Power),
-                ColumnHeader("Compressor Power Input", UnitType.Power),
-                ColumnHeader("Source Side Heat Absorption", UnitType.Power),
+                ColumnHeader("Compressor Power Input", UnitType.Power)
             ]
         )
 
@@ -155,7 +154,7 @@ Rated Load-side Heating Capacity: {self.rated_total_capacity}
 Rated Heating Power Consumption: {self.rated_compressor_power}
 Rated Load-side Volumetric Flow Rate: {self.rated_load_volume_flow_rate}
 Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
-        """
+"""
         for i, c in enumerate(self.heating_capacity_params):
             output += f"Heating Capacity Coefficient HC_{i + 1}: {round(c, 4)}\n"
         for i, c in enumerate(self.compressor_power_params):
@@ -193,6 +192,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
             cb_progress_increment: Callable, cb_progress_done: Callable
     ):
+        # TODO: This function should return some status I think
         cb_progress_initialize(4)  # read data, hc curve fit, power curve fit, calc predicted data
 
         # step 1, read the data into arrays (will be used for both scaling calculations and plotting later)
@@ -218,7 +218,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             self.catalog_load_side_volume_flow_rate.append(data_row[3])
             self.catalog_load_side_heating_capacity.append(data_row[4])
             self.catalog_compressor_power.append(data_row[5])
-            self.catalog_source_side_heat_absorption.append(data_row[6])
+            self.catalog_source_side_heat_absorption.append(data_row[4] - data_row[5])
             scaled_source_side_inlet_temp.append((data_row[0] + 273.15) / (10.0 + 273.15))  # T_ref defined by HP model
             scaled_source_side_flow_rate.append(data_row[1] / self.rated_source_volume_flow_rate.value)
             scaled_load_side_inlet_temp.append((data_row[2] + 273.15) / (10.0 + 273.15))
@@ -330,10 +330,13 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ('Total Heat Transfer Catalog Input', 'point', 'red', self.catalog_load_side_heating_capacity),
             ('Compressor Power Model Output', 'line', 'green', self.predicted_compressor_power),
             ('Compressor Power Catalog Input', 'point', 'green', self.catalog_compressor_power),
+            ('Source Side Heat Absorption Model Output', 'line', 'blue', self.predicted_source_side_heat_absorption),
+            ('Source Side Heat Absorption Catalog Input', 'point', 'blue', self.catalog_source_side_heat_absorption),
         )
 
     def get_error_plot_data(self) -> Tuple:
         return (
             ('Total Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_heating_capacity),
             ('Compressor Power % Error', 'line', 'green', self.percent_error_compressor_power),
+            ('Source Side Heat Absorption % Error', 'line', 'blue', self.percent_error_source_side_heat_absorption),
         )
