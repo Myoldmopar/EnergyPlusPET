@@ -1,24 +1,28 @@
+from enum import Enum, auto
+import numpy as np
+from tkinter import Toplevel, Frame  # containers
+from tkinter import Button, Label  # widgets
+from tkinter import TOP, X, BOTH, ALL  # appearance stuff
+from tkinter.ttk import Notebook, Style  # ttk specific stuff
+
+from energyplus_pet.data_manager import CatalogDataManager
+from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.units import unit_instance_factory
+
 import matplotlib
 matplotlib.use('TkAgg')
-# unfortunately, with newer flake8, you cannot tag the code line above with noqa, you have to tag every trailing import
-# I considered just ignoring E402 for this project, because it consists of small contained files, but for now, noqa here
-import numpy as np  # noqa: E402
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
 
-from tkinter import Toplevel, Frame  # containers  # noqa: E402
-from tkinter import Button, Label  # widgets  # noqa: E402
-from tkinter import TOP, X, BOTH  # appearance stuff  # noqa: E402
-from tkinter.ttk import Notebook, Style  # noqa: E402
-
-from energyplus_pet.data_manager import CatalogDataManager  # noqa: E402
-from energyplus_pet.equipment.base import BaseEquipment  # noqa: E402
-from energyplus_pet.units import unit_instance_factory  # noqa: E402
-
 
 class CatalogDataPlotForm(Toplevel):
+    class ExitCode(Enum):
+        OK = auto()
+        CANCEL = auto()
+
     def __init__(self, parent_window, cdm: CatalogDataManager, eq: BaseEquipment):
         super().__init__(parent_window)
+        self.exit_code = CatalogDataPlotForm.ExitCode.OK
         Label(self, text="Here's some info about this catalog data\nClick through the plots to inspect").pack(
             side=TOP, expand=True, fill=X
         )
@@ -50,11 +54,27 @@ class CatalogDataPlotForm(Toplevel):
             canvas.get_tk_widget().pack()
             canvas.draw()
         plot_notebook.pack(side=TOP, expand=True, fill=BOTH)
-        Button(self, text="OK, Done", command=self.done).pack(side=TOP, expand=False)
+        button_frame = Frame(self)
+        Button(button_frame, text="Looks good, generate parameters", command=self.ok).grid(
+            row=0, column=0, padx=3, pady=3
+        )
+        Button(button_frame, text="Something is wrong -- cancel", command=self.cancel).grid(
+            row=0, column=1, padx=3, pady=3
+        )
+        button_frame.grid_columnconfigure(ALL, weight=1)
+        button_frame.pack(side=TOP, expand=False, fill=X)
         self.grab_set()
         self.transient(parent_window)
 
-    def done(self):
+    def ok(self):
+        self.exit_code = CatalogDataPlotForm.ExitCode.OK
+        self.finish()
+
+    def cancel(self):
+        self.exit_code = CatalogDataPlotForm.ExitCode.CANCEL
+        self.finish()
+
+    def finish(self):
         self.grab_release()
         self.destroy()
 
@@ -72,6 +92,6 @@ if __name__ == "__main__":
             [3, 4, 5, 6, 7, 8, 9]
         ]
     )
-    _cdm.process()
+    _cdm.process(3)
     start = CatalogDataPlotForm(window, _cdm, WaterToWaterHeatPumpHeatingCurveFit())
     window.mainloop()

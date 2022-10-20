@@ -76,6 +76,7 @@ The correction factor requires multiplier values for the following {len(_cf.get_
             Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
         self.tabular_frame = Frame(self)
+        # TODO: The table shouldn't allow resizing, right?
         # TODO: Does db/wb get two independent value columns?
         column_titles = [eq.headers().name_array()[_cf.base_column_index]]
         for mod_column in _cf.get_columns_to_modify():
@@ -104,9 +105,9 @@ The correction factor requires multiplier values for the following {len(_cf.get_
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
         button_frame = Frame(self)
-        self.done_conform_text = StringVar(value="Done")
+        self.done_conform_text = StringVar(value="This one is done, continue")
         btn_done_conform = Button(button_frame, textvariable=self.done_conform_text, command=self._done_or_conform)
-        btn_cancel = Button(button_frame, text="Cancel", command=self.cancel)
+        btn_cancel = Button(button_frame, text="Cancel Wizard", command=self.cancel)
         btn_done_conform.grid(row=4, column=0, padx=p, pady=p)
         btn_cancel.grid(row=4, column=1, padx=p, pady=p)
         button_frame.grid_columnconfigure(0, weight=1)
@@ -129,9 +130,9 @@ The correction factor requires multiplier values for the following {len(_cf.get_
 
     def _refresh_done_conform_button_text(self):
         if self.need_to_conform_units:
-            self.done_conform_text.set("Conform")
+            self.done_conform_text.set("Conform units")
         else:
-            self.done_conform_text.set("Done")
+            self.done_conform_text.set("This one is done, continue")
         self.table.redraw()
 
     def _update_from_traces(self):

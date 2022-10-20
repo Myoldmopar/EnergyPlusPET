@@ -57,11 +57,11 @@ class ConstantParameterEntryForm(Toplevel):
         entries_form.pack(side=TOP, expand=True, fill=BOTH, padx=4, pady=4)
         self.need_to_conform_units = False  # initially it assumes the calculation unit
         button_frame = Frame(self)
-        self.var_conform_done = StringVar(value="Done")
+        self.var_conform_done = StringVar(value="Done, process data now")
         Button(button_frame, textvariable=self.var_conform_done, command=self.conform_done).grid(
             row=0, column=0, padx=3, pady=3
         )
-        Button(button_frame, text="Cancel", command=self.close_me).grid(row=0, column=1, padx=3, pady=3)
+        Button(button_frame, text="Cancel Wizard", command=self.close_me).grid(row=0, column=1, padx=3, pady=3)
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
@@ -74,10 +74,10 @@ class ConstantParameterEntryForm(Toplevel):
         self.need_to_conform_units = False
         for rp in self.known_parameters:
             if not rp.units_conformed:
-                self.var_conform_done.set("Conform")
+                self.var_conform_done.set("Conform units")
                 self.need_to_conform_units = True
                 return
-        self.var_conform_done.set("Done")
+        self.var_conform_done.set("Done, process data now")
 
     def conform_done(self):
         if self.need_to_conform_units:

@@ -188,12 +188,16 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         }
         return dumps(epjson_object, indent=2)
 
+    def get_number_of_progress_steps(self) -> int:
+        return 4  # read data, hc curve fit, power curve fit, calc predicted data
+
+    def minimum_data_points_for_generation(self) -> int:
+        return 5
+
     def generate_parameters(
-            self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
-            cb_progress_increment: Callable, cb_progress_done: Callable
+            self, data_manager: CatalogDataManager, cb_progress_increment: Callable, cb_progress_done: Callable
     ):
         # TODO: This function should return some status I think
-        cb_progress_initialize(4)  # read data, hc curve fit, power curve fit, calc predicted data
 
         # step 1, read the data into arrays (will be used for both scaling calculations and plotting later)
         # these should already be set to zero, but not sure if the main form will reinitialize the equip-instance or not

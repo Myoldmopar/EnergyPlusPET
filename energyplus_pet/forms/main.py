@@ -22,7 +22,7 @@ from energyplus_pet.forms.correction_summary_form import CorrectionFactorSummary
 from energyplus_pet.forms.header_preview import RequiredDataPreviewForm
 from energyplus_pet.forms.catalog_plot import CatalogDataPlotForm
 from energyplus_pet.forms.comparison_plot import ComparisonPlot
-from energyplus_pet.forms.main_data_form import MainDataForm
+from energyplus_pet.forms.base_data_form import MainDataForm
 
 
 class EnergyPlusPetWindow(Tk):
@@ -160,17 +160,14 @@ class EnergyPlusPetWindow(Tk):
         self._tree.focus(init)
         self._tree.selection_set(init)
         tree_holder.pack(side=TOP, fill=BOTH, expand=True)
-        self._button_engage = Button(container, text='Engage Equipment Type', command=self._engage)
-        self._button_engage.pack(side=TOP, padx=3, pady=3, fill=X)
 
     def _build_controls(self, container):
+        self._button_engage = Button(container, text='Engage Equipment Type', command=self._engage)
+        self._button_engage.pack(side=TOP, padx=3, pady=3, fill=X)
         self._button_preview = Button(container, text="Required Data Description", command=self._preview_data)
         self._button_preview.pack(side=TOP, padx=3, pady=3, fill=X)
         self._button_catalog = Button(container, text="Catalog Data Wizard", command=self._catalog_data_wizard)
         self._button_catalog.pack(side=TOP, padx=3, pady=3, fill=X)
-        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
-        self._button_create = Button(container, text="Create Parameters", command=self._start_parameter_thread)
-        self._button_create.pack(side=TOP, padx=3, pady=3)
         Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
         self._progress = Progressbar(container, variable=self._tk_var_progress)
         self._progress.pack(side=TOP, padx=3, pady=3, fill=X)
@@ -190,7 +187,7 @@ class EnergyPlusPetWindow(Tk):
             output_frame_par, wrap='none', width=40, height=20, xscrollcommand=horizontal_scroller_par.set
         )
         this_output_box.pack(side=TOP, padx=3, pady=3, fill=BOTH, expand=True)
-        this_output_box.insert(END, '\n'.join(["BLAH" * 12] * 40))
+        this_output_box.insert(END, 'Messages and results will appear here')
         horizontal_scroller_par.config(command=this_output_box.xview)
         notebook_container.add(output_frame_par, text=tab_title)
         return this_output_box
@@ -206,13 +203,11 @@ class EnergyPlusPetWindow(Tk):
         if self._thread_running:
             self._button_engage['state'] = DISABLED
             self._button_catalog['state'] = DISABLED
-            self._button_create['state'] = DISABLED
             self._button_preview['state'] = DISABLED
             self._button_save_data['state'] = ACTIVE
         elif self._equip_instance is None or self._equip_instance.this_type() == EquipType.InvalidType:
             self._button_engage['state'] = ACTIVE
             self._button_catalog['state'] = DISABLED
-            self._button_create['state'] = DISABLED
             self._button_preview['state'] = DISABLED
             self._button_save_data['state'] = DISABLED
         else:
@@ -220,10 +215,8 @@ class EnergyPlusPetWindow(Tk):
             self._button_catalog['state'] = ACTIVE
             self._button_preview['state'] = ACTIVE
             if self._catalog_data_manager.data_processed:
-                self._button_create['state'] = ACTIVE
                 self._button_save_data['state'] = ACTIVE
             else:
-                self._button_create['state'] = DISABLED
                 self._button_save_data['state'] = DISABLED
 
     def _help_documentation(self):
@@ -294,53 +287,113 @@ class EnergyPlusPetWindow(Tk):
         function.
         :return:
         """
+        self._update_status_bar('Started catalog wizard')
+        self._update_all_output_boxes('Catalog wizard starting')
+
+        self._progress['maximum'] = self._equip_instance.get_number_of_progress_steps() + 9  # 9 steps in here
+        self._handler_thread_increment()
+
         # first open a correction factor definition form window, if this returns False, it means abort
         cdf = CorrectionFactorSummaryForm(self, self._equip_instance)
         self.wait_window(cdf)
         if cdf.exit_code == CorrectionFactorSummaryForm.ExitCode.Cancel:
             # in the original code, this would set CorrectionsExist to false, not sure that's right
+            self._update_status_bar('Correction factor form cancelled')
+            self._update_all_output_boxes('Correction factor form cancelled; reopen wizard to try again')
+            self._tk_var_progress.set(0)
             return  # correction data form was cancelled, just abort
         elif cdf.exit_code == CorrectionFactorSummaryForm.ExitCode.Error:
+            self._update_status_bar('Correction factor form error!')
+            self._update_all_output_boxes('Correction factor form encountered an error; reopen wizard to try again')
+            self._tk_var_progress.set(0)
             return   # may need to report the error
         else:
-            pass  # summaries are done, continue
+            self._update_status_bar('Correction factor summary complete')
+        self._handler_thread_increment()
+
         # if that was successful, loop over each local summary and open individual correction entry forms for each
         for cf_num, cf in enumerate(cdf.factor_summaries):
-            # TODO: Need to create a new form, modal, and check the response; if cancel then abort
-            # Do we need to reset the catalog data at all?
-            # TODO: The tables in the GUIs here shouldn't allow manual extension, right?
             cfd_form = DetailedCorrectionFactorForm(
                 self, cf, self._equip_instance, cf_num, len(cdf.factor_summaries)
             )
             self.wait_window(cfd_form)
             if cfd_form.exit_code == DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel:
+                self._update_status_bar('Correction factor form cancelled')
+                self._update_all_output_boxes('Correction factor form cancelled; reopen wizard to try again')
+                self._tk_var_progress.set(0)
                 return
-            print(cfd_form.completed_factor.describe())
             self._catalog_data_manager.add_correction_factor(cfd_form.completed_factor)
+        self._update_status_bar('Correction factor details complete')
+        self._handler_thread_increment()
+
         # now that we have the full correction factor details, we need to collect the main catalog data
         main_catalog_data_form = MainDataForm(self, self._equip_instance)
         self.wait_window(main_catalog_data_form)
         if main_catalog_data_form.exit_code == MainDataForm.MainDataExitCode.Cancel:
+            self._update_status_bar('Main catalog data form cancelled')
+            self._update_all_output_boxes('Main catalog data form cancelled; reopen wizard to try again')
+            self._tk_var_progress.set(0)
             return
         self._catalog_data_manager.add_base_data(main_catalog_data_form.final_base_data_rows)
+        self._handler_thread_increment()
+
         # then process the base data and correction factors into a full data set
-        response_status = self._catalog_data_manager.process()
-        if response_status == CatalogDataManager.ProcessResult.Error:
-            messagebox.showerror("Error processing data!")
+        response_status = self._catalog_data_manager.process(self._equip_instance.minimum_data_points_for_generation())
+        if response_status == CatalogDataManager.ProcessResult.ERROR:
+            self._update_status_bar('Error processing catalog data')
+            self._update_all_output_boxes(
+                f"Error processing data! Message: \n\n{self._catalog_data_manager.last_error_message}"
+            )
+            self._tk_var_progress.set(0)
             return
-        cde = ConstantParameterEntryForm(self, self._equip_instance)
-        self.wait_window(cde)
-        if cde.form_cancelled:
-            return
-        for k, v in cde.parameter_value_map.items():
-            self._equip_instance.set_required_constant_parameter(k, v)
+        self._handler_thread_increment()
+
+        # if this equipment requires constant/rated parameters, get them now
+        if len(self._equip_instance.required_constant_parameters()) > 0:
+            cde = ConstantParameterEntryForm(self, self._equip_instance)
+            self.wait_window(cde)
+            if cde.form_cancelled:
+                self._update_status_bar('Constant parameter data form cancelled')
+                self._update_all_output_boxes('Constant parameter data form cancelled; reopen wizard to try again')
+                self._tk_var_progress.set(0)
+                return
+            for k, v in cde.parameter_value_map.items():
+                self._equip_instance.set_required_constant_parameter(k, v)
+        self._handler_thread_increment()
+
         # and actually, if the data doesn't have diversity, we should accept it, but not allow creating parameters
         # the user should be able to reopen the wizard and add more data to variables or whatever
         # then display the catalog data plot form for inspection
         cdf = CatalogDataPlotForm(self, self._catalog_data_manager, self._equip_instance)
         cdf.wait_window()
-        self._refresh_gui_state()
+        if cdf.exit_code == CatalogDataPlotForm.ExitCode.CANCEL:
+            self._update_status_bar('Catalog data plot form cancelled')
+            self._update_all_output_boxes('Catalog data plot form cancelled; reopen wizard to try again')
+            self._tk_var_progress.set(0)
+            return
+        self._handler_thread_increment()
+
+        # catalog data is now ready
         self._update_status_bar('Processed Catalog Data')
+        self._update_all_output_boxes('Catalog data plot form cancelled; reopen wizard to try again')
+        self._handler_thread_increment()
+
+        # the parameter generation process could be lengthy, so we put it in a background thread
+        self._update_status_bar('Starting parameter generation process')
+        self._thread_running = True
+        self._refresh_gui_state()
+        thd = Thread(target=self._worker_generate_params, args=(self._equip_instance, self._catalog_data_manager))
+        thd.daemon = True
+        thd.start()
+        self._handler_thread_increment()
+
+    def _worker_generate_params(self, equip_instance: BaseEquipment, data: CatalogDataManager) -> None:
+        # the self.selected_equip_instance should be mutated, right?  So that we don't have to pass it back upward?
+        try:
+            equip_instance.generate_parameters(data, self._callback_thread_increment, self._callback_thread_done)
+        except Exception as e:  # any type of exception
+            self._callback_thread_done(False, "Error occurred! " + str(e))
+            return
 
     def _update_status_bar(self, extra_message: str):
         if self._equip_instance is None:
@@ -359,52 +412,37 @@ class EnergyPlusPetWindow(Tk):
     def _callback_thread_increment(self):
         self._gui_queue.put(self._handler_thread_increment)
 
-    def _handler_thread_starting(self, initial_progress_value: int):
-        self._progress['maximum'] = initial_progress_value
+    def _update_par_box(self, content: str):
+        self._output_box_par.delete('1.0', END)
+        self._output_box_par.insert(END, content)
 
-    def _callback_thread_starting(self, initial_progress_value: int):
-        self._gui_queue.put(lambda: self._handler_thread_starting(initial_progress_value))
+    def _update_idf_box(self, content: str):
+        self._output_box_idf.delete('1.0', END)
+        self._output_box_idf.insert(END, content)
+
+    def _update_json_box(self, content: str):
+        self._output_box_json.delete('1.0', END)
+        self._output_box_json.insert(END, content)
+
+    def _update_all_output_boxes(self, content: str):
+        self._update_par_box(content)
+        self._update_idf_box(content)
+        self._update_json_box(content)
 
     def _handler_thread_done(self, success: bool, err_message: str = ''):
-        self._thread_running = False
+        self._thread_running = True
         self._refresh_gui_state()
         self._update_status_bar('Finished Parameter Generation')
-        self._output_box_par.delete('1.0', END)
-        self._output_box_idf.delete('1.0', END)
-        self._output_box_json.delete('1.0', END)
-        if not success:
-            self._output_box_par.insert(END, err_message)
-            self._output_box_idf.insert(END, err_message)
-            self._output_box_json.insert(END, err_message)
-            return
-        self._output_box_par.insert(END, self._equip_instance.to_parameter_summary())
-        self._output_box_idf.insert(END, self._equip_instance.to_eplus_idf_object())
-        self._output_box_json.insert(END, self._equip_instance.to_eplus_epjson_object())
-        ComparisonPlot(self, self._catalog_data_manager, self._equip_instance)
+        if success:
+            self._update_par_box(self._equip_instance.to_parameter_summary())
+            self._update_idf_box(self._equip_instance.to_eplus_idf_object())
+            self._update_json_box(self._equip_instance.to_eplus_epjson_object())
+            ComparisonPlot(self, self._catalog_data_manager, self._equip_instance)
+        else:
+            self._update_all_output_boxes(err_message)
 
     def _callback_thread_done(self, success: bool, err_message: str = ''):
         self._gui_queue.put(lambda: self._handler_thread_done(success, err_message))
-
-    def _start_parameter_thread(self):
-        self._tk_var_progress.set(0)
-        # set buttons to disabled while it runs
-        self._thread_running = True
-        self._refresh_gui_state()
-        self._update_status_bar('Starting parameter generation process')
-        thd = Thread(target=self._worker_generate_params, args=(self._equip_instance, self._catalog_data_manager))
-        thd.daemon = True
-        thd.start()
-
-    def _worker_generate_params(self, equip_instance: BaseEquipment, data: CatalogDataManager) -> None:
-        # the self.selected_equip_instance should be mutated, right?  So that we don't have to pass it back upward?
-        try:
-            equip_instance.generate_parameters(
-                data, self._callback_thread_starting,
-                self._callback_thread_increment, self._callback_thread_done
-            )
-        except Exception as e:  # any type of exception
-            self._callback_thread_done(False, "Error occurred! " + str(e))
-            return
 
     def run(self) -> None:
         """

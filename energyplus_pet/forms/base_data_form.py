@@ -133,7 +133,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
             row=0, column=1, padx=p, pady=p
         )
         quick_convert_label_frame.grid(row=0, column=1, padx=p, pady=p)
-        self.done_conform_text = StringVar(value="Done")
+        self.done_conform_text = StringVar(value="Done, Continue")
         Button(
             bottom_button_frame, textvariable=self.done_conform_text, command=self._done_or_conform
         ).grid(
@@ -174,9 +174,9 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
 
     def refresh_done_conform_button_text(self):
         if self.need_to_conform_units:
-            self.done_conform_text.set("Conform")
+            self.done_conform_text.set("Conform units")
         else:
-            self.done_conform_text.set("Done")
+            self.done_conform_text.set("Done, Continue")
         self.table.redraw()
 
     def _update_from_traces(self):

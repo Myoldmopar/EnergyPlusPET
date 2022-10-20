@@ -21,6 +21,7 @@ class CatalogDataManager:
         self.base_data: List[List[float]] = []
         self.data_processed = False
         self.final_data_matrix: List[List[float]] = []
+        self.last_error_message = ""
 
     def add_correction_factor(self, cf: CorrectionFactor):
         """
@@ -41,15 +42,10 @@ class CatalogDataManager:
         self.base_data = data
 
     class ProcessResult(Enum):
-        """
-
-        """
         OK = auto()
-        Error = auto()
-        # TODO: Add Empty for processing that ends in an empty data set for some reason
-        # add more as they are needed
+        ERROR = auto()
 
-    def process(self) -> ProcessResult:
+    def process(self, minimum_data_points: int) -> ProcessResult:
         """
         Process the base data and correction factors to create one large full dataset
         Validates the data against a series of tests for data diversity and infinite/out-of-range
@@ -72,6 +68,10 @@ class CatalogDataManager:
                     for column_to_modify in cf.get_columns_to_modify():
                         new_row[column_to_modify] *= cf.mod_correction_data_column_map[column_to_modify][cf_row]
                     self.final_data_matrix.append(new_row)
+        if len(self.final_data_matrix) < minimum_data_points:
+            self.last_error_message = f"Full catalog data set too small. \nData includes {len(self.final_data_matrix)} "
+            self.last_error_message += f"rows, but this equipment requires at least {minimum_data_points}."
+            return CatalogDataManager.ProcessResult.ERROR
         return CatalogDataManager.ProcessResult.OK
 
     def reset(self):

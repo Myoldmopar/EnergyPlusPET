@@ -76,6 +76,5 @@ if __name__ == "__main__":
     eq.catalog_load_side_heating_capacity = [100.0, 200.0, 300.0]
     eq.predicted_load_side_heating_capacity = [100.00001, 200.00001, 299.99999]
     eq.percent_error_load_side_heating_capacity = [0.0000001, 0.00000001, 0.0000001]
-    # ComparisonPlot(window, cdm, eq, ComparisonPlot.PlotType.RawComparison)
     ComparisonPlot(window, cdm, eq)
     window.mainloop()

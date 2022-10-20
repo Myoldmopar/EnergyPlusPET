@@ -57,7 +57,7 @@ class TestWAHPHeatingCurve(EquipmentTestHelper):
         eq.rated_source_volume_flow_rate.value = 50
         eq.rated_total_capacity.value = 360
         eq.rated_compressor_power.value = 60
-        eq.generate_parameters(cdm, lambda *_: None, lambda *_: None, lambda *_: None)
+        eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)
         expected = [12.1, 31.2, 34.2, 82.1, 88.1]
         calculated = eq.heating_capacity_params
         [self.assertAlmostEqual(e, c, 1) for e, c in zip(expected, calculated)]

@@ -36,10 +36,13 @@ class BaseEquipment:
     def to_eplus_epjson_object(self) -> str: pass
 
     @abstractmethod
-    def generate_parameters(
-            self, data_manager, cb_progress_initialize: Callable,
-            cb_progress_increment: Callable, cb_progress_done: Callable
-    ): pass
+    def get_number_of_progress_steps(self) -> int: pass
+
+    @abstractmethod
+    def minimum_data_points_for_generation(self) -> int: pass
+
+    @abstractmethod
+    def generate_parameters(self, data_manager, cb_progress_increment: Callable, cb_progress_done: Callable): pass
 
     @abstractmethod
     def get_absolute_plot_data(self) -> Tuple: pass

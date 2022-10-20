@@ -36,8 +36,8 @@ class CorrectionFactorSummaryForm(Toplevel):
         self.factor_summaries: List[CorrectionFactor] = []
         self._equipment = equipment
         self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error  # initialize with this value
-        self._text_done = 'Done'
-        self._text_skip = 'Skip'
+        self._text_done = 'Done, ready for factor details'
+        self._text_skip = 'Skip entering factors'
         # create the gui
         self._build_gui()
         # draw factors, in case there already are any
@@ -80,10 +80,10 @@ If you have any correction factors, add them here, otherwise, press done to cont
         #
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
-        btn_add = Button(button_frame, text="Add Factor", command=self._add_factor_widget)
+        btn_add = Button(button_frame, text="Add Correction Factor", command=self._add_factor_widget)
         self._txt_done_skip = StringVar(value=self._text_skip)
         btn_ok_skip = Button(button_frame, textvariable=self._txt_done_skip, command=self._done_skip)
-        btn_cancel = Button(button_frame, text="Cancel", command=self._cancel)
+        btn_cancel = Button(button_frame, text="Cancel Wizard", command=self._cancel)
         # pack everything
         lbl.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         s_0.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
