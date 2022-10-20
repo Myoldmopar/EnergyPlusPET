@@ -1,4 +1,12 @@
 from enum import auto, Enum
+
+import numpy as np
+from tkinter import Frame, Toplevel, TOP, BOTH, Tk, Label, X
+from tkinter.ttk import Notebook
+
+from energyplus_pet.data_manager import CatalogDataManager
+from energyplus_pet.equipment.base import BaseEquipment
+
 import matplotlib
 matplotlib.use('TkAgg')
 
@@ -7,12 +15,6 @@ matplotlib.use('TkAgg')
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
-import numpy as np  # noqa: E402
-from tkinter import Frame, Toplevel, TOP, BOTH, Tk  # noqa: E402
-from tkinter.ttk import Notebook  # noqa: E402
-
-from energyplus_pet.data_manager import CatalogDataManager  # noqa: E402
-from energyplus_pet.equipment.base import BaseEquipment  # noqa: E402
 
 
 class ComparisonPlot(Toplevel):
@@ -29,13 +31,13 @@ class ComparisonPlot(Toplevel):
                 "tab_title": "Catalog Data Raw Comparison",
                 "plot_title": "Model vs. Catalog Data Points",
                 "plot_data": equip_instance.get_absolute_plot_data(),
-                "y_label": "[Data could be multiple units]"
+                "y_label": "[Data could be multiple units]",
             },
             ComparisonPlot.PlotType.PercentError: {
                 "tab_title": "Percent Error Comparison",
                 "plot_title": "Percent Error (hopefully near zero!)",
                 "plot_data": equip_instance.get_error_plot_data(),
-                "y_label": "Percent Error [%]"
+                "y_label": "Percent Error [%]",
             }
         }
         plot_notebook = Notebook(self)
@@ -60,9 +62,12 @@ class ComparisonPlot(Toplevel):
             a.set_xlabel("Catalog Data Points (no order)")
             a.set_ylabel(data_this_plot_type['y_label'])
             canvas = FigureCanvasTkAgg(fig, master=plot_frame)
-            canvas.get_tk_widget().pack()
+            canvas.get_tk_widget().pack(side=TOP, expand=True, fill=BOTH)
             canvas.draw()
         plot_notebook.pack(side=TOP, expand=True, fill=BOTH)
+        metrics = [f"{m[0]}: {m[1]}"for m in equip_instance.get_extra_regression_metrics()]
+        if metrics:
+            Label(self, text='\n'.join(metrics)).pack(side=TOP, expand=False, fill=X)
         self.grab_set()
         self.transient(parent_window)
 
@@ -76,5 +81,6 @@ if __name__ == "__main__":
     eq.catalog_load_side_heating_capacity = [100.0, 200.0, 300.0]
     eq.predicted_load_side_heating_capacity = [100.00001, 200.00001, 299.99999]
     eq.percent_error_load_side_heating_capacity = [0.0000001, 0.00000001, 0.0000001]
+    eq.heating_capacity_average_err_one_sigma = 0.00005
     ComparisonPlot(window, cdm, eq)
     window.mainloop()

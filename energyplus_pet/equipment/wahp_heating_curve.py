@@ -1,6 +1,7 @@
 from json import dumps
 from typing import Callable, List, Tuple
 
+from numpy import sqrt, diag, average
 from scipy.optimize import curve_fit
 
 from energyplus_pet.data_manager import CatalogDataManager
@@ -38,9 +39,12 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         self.catalog_load_side_heating_capacity = []
         self.catalog_compressor_power = []
         self.catalog_source_side_heat_absorption = []
-        # these are matrices in the original code, here just store the final vector
+        # these eventually become the actual parameter arrays
         self.heating_capacity_params = []
         self.compressor_power_params = []
+        # these represent a metric for the quality of the regression
+        self.heating_capacity_average_err_one_sigma = 0.0
+        self.compressor_power_average_err_one_sigma = 0.0
         # store the predicted outputs that are calculated from the generated parameters
         self.predicted_load_side_heating_capacity = []
         self.predicted_compressor_power = []
@@ -247,7 +251,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             """
             return a * x[0] + b * x[1] + c * x[2] + d * x[3] + e * x[4]
 
-        heating_capacity_params = curve_fit(
+        curve_fit_response = curve_fit(
             evaluate_expression,
             (
                 ones,
@@ -257,10 +261,12 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
                 scaled_source_side_flow_rate
             ),
             scaled_heating_capacity
-        )[0]
+        )
+        heating_capacity_params = curve_fit_response[0]
+        self.heating_capacity_average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
         self.heating_capacity_params = list(heating_capacity_params)
         cb_progress_increment()
-        compressor_power_params = curve_fit(
+        curve_fit_response = curve_fit(
             evaluate_expression,
             (
                 ones,
@@ -270,7 +276,9 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
                 scaled_source_side_flow_rate
             ),
             scaled_compressor_power
-        )[0]
+        )
+        compressor_power_params = curve_fit_response[0]
+        self.compressor_power_average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
         self.compressor_power_params = list(compressor_power_params)
         cb_progress_increment()
 
@@ -343,4 +351,16 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ('Total Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_heating_capacity),
             ('Compressor Power % Error', 'line', 'green', self.percent_error_compressor_power),
             ('Source Side Heat Absorption % Error', 'line', 'blue', self.percent_error_source_side_heat_absorption),
+        )
+
+    def get_extra_regression_metrics(self) -> Tuple:
+        return (
+            (
+                "Total Heat Transfer Average curve-fit error (1 standard deviation)",
+                self.heating_capacity_average_err_one_sigma
+            ),
+            (
+                "Compressor Power Average curve-fit error (1 standard deviation)",
+                self.compressor_power_average_err_one_sigma
+            )
         )

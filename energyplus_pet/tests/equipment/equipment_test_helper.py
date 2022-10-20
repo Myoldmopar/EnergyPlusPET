@@ -17,3 +17,4 @@ class EquipmentTestHelper(TestCase):
             self.assertIsInstance(output, str)
         self.assertIsInstance(eq.get_absolute_plot_data(), tuple)
         self.assertIsInstance(eq.get_error_plot_data(), tuple)
+        self.assertIsInstance(eq.get_extra_regression_metrics(), tuple)

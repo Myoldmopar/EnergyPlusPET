@@ -50,6 +50,10 @@ class BaseEquipment:
     @abstractmethod
     def get_error_plot_data(self) -> Tuple: pass
 
+    # noinspection PyMethodMayBeStatic
+    def get_extra_regression_metrics(self) -> Tuple:
+        return ()
+
     @staticmethod
     def fill_eplus_object_format(fields: List[str], form: str) -> str:
         preferred_spaces = 16
