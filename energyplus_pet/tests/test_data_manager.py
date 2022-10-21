@@ -3,7 +3,6 @@ from unittest import TestCase
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
-from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class TestDataManager(TestCase):
