@@ -9,7 +9,8 @@ from tksheet import Sheet
 
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.units import unit_instance_factory
+from energyplus_pet.exceptions import EnergyPlusPetException
+from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue
 
 
 class DetailedCorrectionFactorForm(Toplevel):
@@ -48,8 +49,11 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             db_label = Label(db_frame, text="Dry Bulb Value/Units:")
             self.db_value = DoubleVar()
             db_value = Entry(db_frame, textvariable=self.db_value)
-            options = ["Fahrenheit", "Celsius"]  # TODO: Get from TempUnits
-            self.db_units_string = StringVar(value=options[0])
+            options = list(TemperatureValue.get_unit_string_map().values())
+            preferred_temp_unit_id = TemperatureValue.calculation_unit_id()
+            preferred_temp_unit_string = TemperatureValue.get_unit_string_map()[preferred_temp_unit_id]
+            # TODO: Need to add tracking and conforming just like the base column units conforming
+            self.db_units_string = StringVar(value=preferred_temp_unit_string)
             db_units = OptionMenu(db_frame, self.db_units_string, *options)
             db_label.grid(row=0, column=0, padx=p, pady=p)
             db_value.grid(row=0, column=1, padx=p, pady=p)
@@ -60,18 +64,25 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         if _cf.correction_type == CorrectionFactorType.Replacement:
             replacement_frame = Frame(self)
             replacement_label = Label(replacement_frame, text="Specify the units of the replacement data (column 1):")
-            base_column_units_type = eq.headers().unit_array()[_cf.base_column_index]
-            dummy_units_instance = unit_instance_factory(0.0, base_column_units_type)
+            # all we need to do is look up the UnitType for the replacement column
+            # from this type, we can get a Base unit class and get everything we need from it.
+            # we don't need to create unit-value instances until we are conforming the final data
+            # this returns a UnitType enum type of unit, such as UnitType.Temperature or UnitType.FlowRate
             self.replacement_column_unit_type = eq.headers().unit_array()[_cf.base_column_index]
-            self.replacement_unit_strings = dummy_units_instance.get_unit_string_map()
-            self.preferred_replacement_unit_index = dummy_units_instance.calculation_unit_id()
-            self.preferred_replacement_unit_string = dummy_units_instance.get_unit_string_map()[
-                self.preferred_replacement_unit_index
-            ]
+            # this returns a class "type" not an instance, so like TemperatureUnits or PowerUnits
+            unit_type_class = unit_class_factory(self.replacement_column_unit_type)
+            # for this specific unit type, get a mapping of the underlying ids to user-consumable names {'some_id': 'W'}
+            self.unit_id_to_string_mapping = unit_type_class.get_unit_string_map()
+            # one thing we need is a list of all the user-facing unit names, such as ['W', 'kW']
+            replacement_unit_strings = list(self.unit_id_to_string_mapping.values())
+            # store the preferred replacement_unit id and string
+            preferred_replacement_unit_id = unit_type_class.calculation_unit_id()
+            self.preferred_replacement_unit_string = self.unit_id_to_string_mapping[preferred_replacement_unit_id]
+            # create a Tk variable to store the currently shown user string for replacement units
             self.replacement_units_string = StringVar(value=self.preferred_replacement_unit_string)
             replacement_option = OptionMenu(
                 replacement_frame, self.replacement_units_string,
-                *self.replacement_unit_strings, command=self._units_changed
+                *replacement_unit_strings, command=self._units_changed
             )
             replacement_label.grid(row=0, column=0, padx=p, pady=p)
             replacement_option.grid(row=0, column=1, sticky=EW, padx=p, pady=p)
@@ -126,6 +137,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         self.transient(parent_window)
 
     def _units_changed(self, proposed_units):
+        """This function is called back by the OptionMenu with the new value, so we don't need to check anything"""
         self.need_to_conform_units = False
         if proposed_units != self.preferred_replacement_unit_string:
             self.need_to_conform_units = True
@@ -138,17 +150,17 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self.done_conform_text.set("This one is done, continue")
         self.table.redraw()
 
-    def _update_from_traces(self):
-        pass
-
     def _done_or_conform(self):
         if self.need_to_conform_units:
             self.conform_units()
         else:
+            # OK, so if we are done, units must be ready, so we just need to update the data in the correction factor
             self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
+            # read the first column of data into the base correction of the CF
             self.completed_factor.base_correction = [
                 float(self.table.get_cell_data(row, 0)) for row in range(self.table.total_rows())
             ]
+            # then iterate over the mod column ids of the CF and read the data into lists and then into the CF map
             for col_num, equipment_column_index in enumerate(self.completed_factor.columns_to_modify):
                 this_column = []
                 for row in range(self.table.total_rows()):
@@ -158,15 +170,21 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self.destroy()
 
     def conform_units(self):
-        """This is a pretty convoluted way to do this, think harder"""
-        # create a dummy value for this unit type -- wrong
+        # get the current string of units, could also get an
         current_units_string = self.replacement_units_string.get()
-        # get the full set of unit strings to look the index back up
-        units_index_now = self.replacement_unit_strings.index(current_units_string)
+        # get the ID of the current unit
+        # TODO: Make this a function in the base unit class
+        current_unit_id = None
+        for k, v in self.unit_id_to_string_mapping.items():
+            if v == current_units_string:
+                current_unit_id = k
+        if not current_unit_id:
+            raise EnergyPlusPetException("WHAT?")
+        # END: Make this a function in the base unit class
         for r in range(self.table.total_rows()):
             cell_value = float(self.table.get_cell_data(r, 0))
             unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)
-            unit_value.units = units_index_now
+            unit_value.units = current_unit_id
             unit_value.convert_to_calculation_unit()
             self.table.set_cell_data(r, 0, unit_value.value)
         self.replacement_units_string.set(self.preferred_replacement_unit_string)

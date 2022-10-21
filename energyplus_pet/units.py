@@ -94,15 +94,15 @@ class DimensionlessValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return DimensionlessValue.Dimensionless
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return DimensionlessValue.Dimensionless
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return DimensionlessValue.Dimensionless
 
     def convert_to_calculation_unit(self):
@@ -119,7 +119,7 @@ class PowerValue(BaseValueWithUnit):
         return UnitType.Power
 
     @staticmethod
-    def get_unit_ids() -> List[int]:
+    def get_unit_ids() -> List[str]:
         return [PowerValue.Watts, PowerValue.Kilowatts, PowerValue.BTU_hour, PowerValue.MBTU_hour]
 
     @staticmethod
@@ -132,15 +132,15 @@ class PowerValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return PowerValue.Kilowatts
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return PowerValue.MBTU_hour
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return PowerValue.Kilowatts
 
     def convert_to_calculation_unit(self):
@@ -166,7 +166,7 @@ class FlowValue(BaseValueWithUnit):
         return UnitType.Flow
 
     @staticmethod
-    def get_unit_ids() -> List[int]:
+    def get_unit_ids() -> List[str]:
         return [FlowValue.GPM, FlowValue.CFM, FlowValue.M3S]
 
     @staticmethod
@@ -178,15 +178,15 @@ class FlowValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return FlowValue.M3S
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return FlowValue.GPM
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return FlowValue.M3S
 
     def convert_to_calculation_unit(self):
@@ -220,15 +220,15 @@ class TemperatureValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return TemperatureValue.C
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return TemperatureValue.F
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return TemperatureValue.C
 
     def convert_to_calculation_unit(self):
@@ -251,7 +251,7 @@ class PressureValue(BaseValueWithUnit):
         return UnitType.Pressure
 
     @staticmethod
-    def get_unit_ids() -> List[int]:
+    def get_unit_ids() -> List[str]:
         return [PressureValue.Pa, PressureValue.KPa, PressureValue.Atm, PressureValue.PSI]
 
     @staticmethod
@@ -264,15 +264,15 @@ class PressureValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return PressureValue.Pa
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return PressureValue.PSI
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return PressureValue.Pa
 
     def convert_to_calculation_unit(self):
@@ -298,7 +298,7 @@ class LengthValue(BaseValueWithUnit):
         return UnitType.Length
 
     @staticmethod
-    def get_unit_ids() -> List[int]:
+    def get_unit_ids() -> List[str]:
         return [
             LengthValue.Meters, LengthValue.Feet, LengthValue.Inches, LengthValue.Centimeters, LengthValue.Millimeters
         ]
@@ -314,15 +314,15 @@ class LengthValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return LengthValue.Meters
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return LengthValue.Inches
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return LengthValue.Meters
 
     def convert_to_calculation_unit(self):
@@ -348,7 +348,7 @@ class RotationSpeedValue(BaseValueWithUnit):
         return UnitType.RotationalSpeed
 
     @staticmethod
-    def get_unit_ids() -> List[int]:
+    def get_unit_ids() -> List[str]:
         return [RotationSpeedValue.RevsPerSecond, RotationSpeedValue.RevsPerMinute, RotationSpeedValue.RadiansPerSecond]
 
     @staticmethod
@@ -360,15 +360,15 @@ class RotationSpeedValue(BaseValueWithUnit):
         return od
 
     @staticmethod
-    def calculation_unit_id() -> int:
+    def calculation_unit_id() -> str:
         return RotationSpeedValue.RevsPerSecond
 
     @staticmethod
-    def base_ip_unit_id() -> int:
+    def base_ip_unit_id() -> str:
         return RotationSpeedValue.RevsPerMinute
 
     @staticmethod
-    def base_si_unit() -> int:
+    def base_si_unit() -> str:
         return RotationSpeedValue.RevsPerSecond
 
     def convert_to_calculation_unit(self):

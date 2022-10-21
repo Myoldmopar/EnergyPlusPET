@@ -3,15 +3,16 @@ from typing import Callable, List, Tuple
 
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
-from energyplus_pet.units import BaseValueWithUnit
+from energyplus_pet.units import UnitType
 
-
-# Note: Abstract methods are not being tested for coverage here
 
 class BaseEquipment:
     """
     This class represents an abstract piece of equipment to be processed by this library.
     This is primarily a set of abstract methods that define what must be overridden by derived equipment classes.
+    Data stored in the equipment class should assume that everything coming from the catalog/correction/rated forms
+    are all coming in with the proper calculation units.  The forms won't allow continuing until everything is
+    conformed properly.  So equipment specific parameters should be plain float arrays and scalars, not Unit instances.
     """
 
     def this_type(self) -> EquipType:
@@ -50,23 +51,39 @@ class BaseEquipment:
         """
         pass
 
+    class RequiredConstantParameter:
+        """A minimal class for capturing information to describe fixed/rated/constant parameters"""
+        def __init__(self, p_id: str, title: str, description: str, unit_type: UnitType, default_value: float = 0.0):
+            """
+            Constructor for the instance
+
+            :param p_id: A unique (for this equipment type) string ID for this parameter
+            :param title: A brief (short sentence?) title for this variable
+            :param description: A longer (long sentence?) description for this variable
+            :param unit_type: A UnitType enum instance for this parameter
+            :param default_value: An optional default value, should be already in the UnitType's calculation unit
+            """
+            self.id = p_id
+            self.title = title
+            self.description = description
+            self.unit_type = unit_type
+            self.default_value = default_value
+
     @abstractmethod
-    def get_required_constant_parameters(self) -> List[BaseValueWithUnit]:  # pragma: no cover
-        # TODO: I think this should just return unit types and names, right?
+    def get_required_constant_parameters(self) -> List[RequiredConstantParameter]:  # pragma: no cover
         """
         Must be overridden to return a set of constant/fixed/rated parameters for this type of equipment
 
-        :return: List of BaseValueWithUnits (for now)
+        :return: List of RequiredConstantParameter instances
         """
         pass
 
     @abstractmethod
-    def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None:  # pragma: no cover
+    def set_required_constant_parameter(self, parameter_id: str, new_value: float) -> None:  # pragma: no cover
         """
-        Must be overridden to set a single parameter on this equipment instance, accessing it by string name.
-        Basically, this function is a map from each of the constant parameter strings.
+        Must be overridden to set a single parameter on this equipment instance, accessing it by ID.
 
-        :param parameter_name: Name of the parameter to set, as retrieved from `required_constant_parameters`
+        :param parameter_id: ID of the parameter to set, as retrieved from `required_constant_parameters`
         :param new_value: The new floating point value to set as the fixed parameter value, should be in proper units
         :return: Nothing
         """

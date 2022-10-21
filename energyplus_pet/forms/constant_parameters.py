@@ -1,46 +1,83 @@
 from tkinter import Toplevel, Frame, LabelFrame  # containers
 from tkinter import Button, Label, OptionMenu, Entry  # widgets
-from tkinter import TOP, X, RIDGE, BOTH  # appearance stuff
+from tkinter import TOP, X, RIDGE, BOTH, ALL  # appearance stuff
 from tkinter import StringVar, DoubleVar  # dynamic variables
 from typing import Callable
 
-from energyplus_pet.units import BaseValueWithUnit
+from energyplus_pet.units import unit_class_factory, unit_instance_factory
 from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class ConstantParameterEntryWidget(Frame):
     """
     This form is where the user enters any fixed/rated parameter values for this equipment type
     """
-    def __init__(self, value: BaseValueWithUnit, parent_frame: LabelFrame, units_changed_handler: Callable):
+    def __init__(
+            self, rp: BaseEquipment.RequiredConstantParameter, parent_frame: LabelFrame, units_ch_handler: Callable
+    ):
+        """
+        Constructor for this widget.  Creates a small grid for users to enter a single parameter.
+        Four member variables are public:
+
+        * rp_id (str) which is the unique id for this parameter for this equipment type
+        * units_conformed (bool) which is a flag for whether the units are ready to go here
+        * var_value (Tk.DoubleVar) which holds the value of the parameter, usually accessed after conforming
+        * var_units_string (Tk.StringVar) which holds the units of the parameter, usually accessed after conforming
+
+        :param rp: A required constant/rated parameter, defined on each equipment type
+        :param parent_frame: A frame to hold this widget
+        :param units_ch_handler: A function to be called back to alert the parent of units changes
+        """
         super().__init__(parent_frame, borderwidth=1, relief=RIDGE)
-        self.value = value
-        self.units_changed_handler = units_changed_handler
+        self.rp_id = rp.id
+        self._units_changed_handler = units_ch_handler
         p = 4
-        self.unit_strings = self.value.get_unit_string_map()
-        self.target_unit = self.unit_strings[self.value.units]
-        Label(self, text=self.value.name).grid(row=0, column=0, padx=p, pady=p)
-        Label(self, text=self.value.description).grid(row=1, column=0, padx=p, pady=p)
-        self.var_value = DoubleVar(value=self.value.value)
+        self._unit_type = rp.unit_type
+        unit_type_class = unit_class_factory(self._unit_type)
+        self._unit_id_to_string_mapping = unit_type_class.get_unit_string_map()
+        unit_strings = list(self._unit_id_to_string_mapping.values())
+        preferred_unit_id = unit_type_class.calculation_unit_id()
+        self._preferred_unit_string = self._unit_id_to_string_mapping[preferred_unit_id]
+        Label(self, text=rp.title).grid(row=0, column=0, padx=p, pady=p)
+        Label(self, text=rp.description).grid(row=1, column=0, padx=p, pady=p)
+        self.var_value = DoubleVar(value=rp.default_value)
         Entry(self, textvariable=self.var_value).grid(row=0, column=1, padx=p, pady=p)
-        self.var_selected_unit = StringVar(value=self.target_unit)
-        OptionMenu(self, self.var_selected_unit, *self.unit_strings).grid(row=1, column=1, padx=p, pady=p)
-        self.var_selected_unit.trace('w', self.units_change)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.var_units_string = StringVar(value=self._preferred_unit_string)
+        OptionMenu(self, self.var_units_string, *unit_strings, command=self._units_changed).grid(
+            row=1, column=1, padx=p, pady=p
+        )
+        self.grid_columnconfigure(ALL, weight=1)
+        self.grid_rowconfigure(ALL, weight=1)
         self.units_conformed = True
 
-    def units_change(self, *_):
-        self.value.units = self.unit_strings.index(self.var_selected_unit.get())
-        self.units_conformed = self.var_selected_unit.get() == self.target_unit
-        self.units_changed_handler()
+    def _units_changed(self, proposed_units):
+        """Handler for user changing units, just sets a flag for the parent form"""
+        self.units_conformed = proposed_units == self._preferred_unit_string
+        self._units_changed_handler()
 
     def conform_units(self):
-        self.value.convert_to_calculation_unit()
-        self.var_value.set(self.value.value)
-        self.var_selected_unit.set(self.target_unit)
+        """
+        Conforms the value to the preferred units for this unit type
+
+        :return: Nothing
+        """
+        current_units_string = self.var_units_string.get()
+        # get the ID of the current unit
+        # TODO: Make this a function in the base unit class
+        current_unit_id = None
+        for k, v in self._unit_id_to_string_mapping.items():
+            if v == current_units_string:
+                current_unit_id = k
+        if not current_unit_id:
+            raise EnergyPlusPetException("WHAT?")
+        current_value = self.var_value.get()
+        unit_value = unit_instance_factory(current_value, self._unit_type)
+        unit_value.units = current_unit_id
+        unit_value.convert_to_calculation_unit()
+        self.var_value.set(unit_value.value)
+        self.var_units_string.set(self._preferred_unit_string)
+        self.units_conformed = True
 
 
 class ConstantParameterEntryForm(Toplevel):
@@ -75,8 +112,8 @@ class ConstantParameterEntryForm(Toplevel):
 
     def check_all_units(self):
         self.need_to_conform_units = False
-        for rp in self.known_parameters:
-            if not rp.units_conformed:
+        for parameter_widget in self.known_parameters:
+            if not parameter_widget.units_conformed:
                 self.var_conform_done.set("Conform units")
                 self.need_to_conform_units = True
                 return
@@ -84,13 +121,13 @@ class ConstantParameterEntryForm(Toplevel):
 
     def conform_done(self):
         if self.need_to_conform_units:
-            for rp in self.known_parameters:
-                rp.conform_units()
+            for parameter_widget in self.known_parameters:
+                parameter_widget.conform_units()
             self.check_all_units()
         else:
             self.form_cancelled = False
-            for rp in self.known_parameters:
-                self.parameter_value_map[rp.value.name] = rp.var_value.get()
+            for parameter_widget in self.known_parameters:
+                self.parameter_value_map[parameter_widget.rp_id] = parameter_widget.var_value.get()
             self.close_me()
 
     def close_me(self):

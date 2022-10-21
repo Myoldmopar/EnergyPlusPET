@@ -3,7 +3,6 @@ from unittest import TestCase
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
-from energyplus_pet.units import BaseValueWithUnit
 
 
 class EquipmentTestHelper(TestCase):
@@ -20,7 +19,7 @@ class EquipmentTestHelper(TestCase):
         self.assertIsInstance(headers, ColumnHeaderArray)
         self.assertGreater(len(headers.columns), 1)
         for param in eq.get_required_constant_parameters():
-            self.assertIsInstance(param, BaseValueWithUnit)
+            self.assertIsInstance(param, BaseEquipment.RequiredConstantParameter)
         for output in [eq.to_eplus_idf_object(), eq.to_parameter_summary(), eq.to_eplus_epjson_object()]:
             self.assertIsInstance(output, str)
         self.assertIsInstance(eq.get_absolute_plot_data(), tuple)

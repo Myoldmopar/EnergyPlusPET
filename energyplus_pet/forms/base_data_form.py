@@ -9,7 +9,8 @@ from typing import List
 from tksheet import Sheet
 
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.units import unit_instance_factory
+from energyplus_pet.exceptions import EnergyPlusPetException
+from energyplus_pet.units import unit_class_factory, unit_instance_factory
 
 
 class MainDataForm(Toplevel):
@@ -72,25 +73,28 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         pretend_data = []
         # TODO: Can we just tag a column with a dict of extra data rather than separate lists?
         self.columnar_unit_types = []
-        self.columnar_preferred_unit_strings = []  # keep this for convenience
-        self.columnar_units_are_preferred = []
-        for row in range(3):  # TODO: Add support to add more rows, then when reading data, check for blank
+        self.columnar_unit_id_to_string_mapping = []  # keep this for convenience
+        self.columnar_preferred_unit_string = []
+        self.columnar_units_are_preferred = []  # boolean check
+        for row in range(6):  # TODO: Add support to add more rows, then when reading data, check for blank
             this_row = []
             if row == 0:
                 for col in range(len(column_units)):
-                    unit_type = column_units[col]
-                    unit_instance = unit_instance_factory(0.0, unit_type)
-                    preferred_unit = unit_instance.calculation_unit_id()
-                    all_unit_strings = unit_instance.get_unit_string_map()
-                    preferred_unit_string = all_unit_strings[preferred_unit]
-                    self.columnar_unit_types.append(unit_type)
-                    self.columnar_preferred_unit_strings.append(preferred_unit_string)
+                    this_column_unit_type = column_units[col]
+                    this_column_unit_type_class = unit_class_factory(this_column_unit_type)
+                    this_column_unit_id_to_string_mapping = this_column_unit_type_class.get_unit_string_map()
+                    this_column_unit_strings = list(this_column_unit_id_to_string_mapping.values())
+                    this_column_preferred_unit_id = this_column_unit_type_class.calculation_unit_id()
+                    preferred_unit_string = this_column_unit_id_to_string_mapping[this_column_preferred_unit_id]
+                    self.columnar_unit_types.append(this_column_unit_type)
+                    self.columnar_unit_id_to_string_mapping.append(this_column_unit_id_to_string_mapping)
+                    self.columnar_preferred_unit_string.append(preferred_unit_string)
                     self.columnar_units_are_preferred.append(True)
                     this_row.append(f"{preferred_unit_string}")
                     self.table.create_dropdown(
                         r=row,
                         c=col,
-                        values=all_unit_strings,
+                        values=this_column_unit_strings,
                         set_value=preferred_unit_string,
                         state="readonly",
                         redraw=False,
@@ -172,7 +176,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
                 units_value_this_column = edit_cell_event.text  # currently being modified
             else:
                 units_value_this_column = self.table.get_cell_data(0, c)  # just get the data from the cell
-            if units_value_this_column != self.columnar_preferred_unit_strings[c]:
+            if units_value_this_column != self.columnar_preferred_unit_string[c]:
                 self.need_to_conform_units = True
         self.refresh_done_conform_button_text()
 
@@ -205,22 +209,26 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
     def conform_units(self):
         """This is a pretty convoluted way to do this, think harder"""
         for c in range(self.table.total_columns()):
-            units_value_this_column = self.table.get_cell_data(0, c)
-            if units_value_this_column != self.columnar_preferred_unit_strings[c]:
+            current_units_string = self.table.get_cell_data(0, c)
+            if current_units_string != self.columnar_preferred_unit_string[c]:
+                current_unit_id = None
+                for k, v in self.columnar_unit_id_to_string_mapping[c].items():
+                    if v == current_units_string:
+                        current_unit_id = k
+                if not current_unit_id:
+                    raise EnergyPlusPetException("WHAT?")
                 # create a dummy value for this unit type -- wrong
-                unit_instance_this_column = unit_instance_factory(0.0, self.columnar_unit_types[c])
-                # get the full set of unit strings to look the index back up
-                unit_strings = unit_instance_this_column.get_unit_string_map()
-                units_index_now = unit_strings.index(units_value_this_column)
+                # unit_instance_this_column = unit_instance_factory(0.0, self.columnar_unit_types[c])
+                # # get the full set of unit strings to look the index back up
+                # unit_strings = unit_instance_this_column.get_unit_string_map()
+                # units_index_now = unit_strings.index(current_units_string)
                 for r in range(self.table.total_rows()):
-                    # if r == 0:
-                    #     pass
                     if r == 0:
-                        self.table.set_cell_data(r, c, unit_strings[unit_instance_this_column.calculation_unit_id()])
+                        self.table.set_cell_data(r, c, self.columnar_preferred_unit_string[c])
                     else:
                         cell_value = float(self.table.get_cell_data(r, c))
                         unit_value = unit_instance_factory(cell_value, self.columnar_unit_types[c])
-                        unit_value.units = units_index_now
+                        unit_value.units = current_unit_id
                         unit_value.convert_to_calculation_unit()
                         self.table.set_cell_data(r, c, unit_value.value)
         self.need_to_conform_units = False

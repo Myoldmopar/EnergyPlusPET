@@ -5,17 +5,17 @@ from energyplus_pet.units import UnitType
 
 class ColumnHeader:
     """Defines a single column of data for an equipment type"""
-    def __init__(self, column_name: str, unit: UnitType, db: bool = False, wb: bool = False):
+    def __init__(self, column_name: str, unit_type: UnitType, db: bool = False, wb: bool = False):
         """
         Constructs a single column header
 
         :param column_name: The string name of this column
-        :param unit: The UnitType for this column
+        :param unit_type: The UnitType for this column
         :param db: An optional bool flag for whether this column is an air dry-bulb column
         :param wb: An optional bool flag for whether this column is an air wet-bulb column
         """
         self.name = column_name
-        self.units = unit
+        self.units_type = unit_type
         self.dry_bulb_column_flag = db
         self.wet_bulb_column_flag = wb
 
@@ -32,7 +32,7 @@ class ColumnHeaderArray:
 
     def unit_array(self) -> List[UnitType]:
         """Returns the list of units for these columns"""
-        return [c.units for c in self.columns]
+        return [c.units_type for c in self.columns]
 
     def name_array(self) -> List[str]:
         """Returns the list of strings for these columns"""
@@ -42,7 +42,7 @@ class ColumnHeaderArray:
         """Returns a descriptive summary of this set of column headers"""
         response = ""
         for c in self.columns:
-            response += f"{c.name} [{c.units}]\n"
+            response += f"{c.name} [{c.units_type}]\n"
         return response
 
     def get_descriptive_csv(self) -> str:
