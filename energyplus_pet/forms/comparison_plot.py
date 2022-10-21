@@ -19,6 +19,9 @@ from matplotlib.figure import Figure  # noqa: E402
 
 
 class ComparisonPlot(Toplevel):
+    """
+    This form is where we show the user the numeric results of the parameter generation process
+    """
 
     class PlotType(Enum):
         RawComparison = auto()

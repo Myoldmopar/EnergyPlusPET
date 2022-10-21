@@ -22,4 +22,4 @@ class TestEquipmentFactory(TestCase):
         self.assertEqual(len(expected_outcome), len(list(EquipType)))
         # call
         for t, f in expected_outcome.items():
-            f(EquipmentFactory.factory(t))
+            f(EquipmentFactory.instance_factory(t))

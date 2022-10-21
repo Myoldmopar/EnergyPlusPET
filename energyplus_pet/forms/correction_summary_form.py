@@ -23,6 +23,9 @@ class Event:
 
 
 class CorrectionFactorSummaryForm(Toplevel):
+    """
+    This form is where the user will enter basic correction factor summary data.
+    """
     class ExitCode(Enum):
         Cancel = auto()
         Done = auto()

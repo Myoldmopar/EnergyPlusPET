@@ -16,6 +16,10 @@ from matplotlib.figure import Figure  # noqa: E402
 
 
 class CatalogDataPlotForm(Toplevel):
+    """
+    This form is where we display the processed catalog data to the user to allow them to see variation in each
+    parameter.
+    """
     class ExitCode(Enum):
         OK = auto()
         CANCEL = auto()

@@ -12,10 +12,22 @@ from energyplus_pet.units import UnitType, BaseValueWithUnit, FlowValue, PowerVa
 
 
 class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
+    """
+    This class represents a water-to-air heat pump, heating mode, using the model formulation:
+    Q = Q_rated * (A + B * Tl + C * Ts + D * Vl + E * Vs)
+    P = P_rated * (F + G * Tl + H * Ts + I * Vl + J * Vs)
+    where:
+    Q is the load side heat transfer rate
+    P is the compressor power
+    _rated indicates the nominal operating value
+    A-J are curve fit coefficients
+    Tl and Ts are scaled load and source side inlet temps (T/283.15) where original T is in Kelvin
+    Vl and Vs are scaled load and source side volume flow rates (V/V_rated)
+    """
 
     def __init__(self):
         # need some rated parameters that we get from the user for scaling, reporting, etc.
-        self.rated_load_volume_flow_rate = FlowValue(  # TODO: Get these from a form!
+        self.rated_load_volume_flow_rate = FlowValue(
             0.0006887, "Rated Load Side Flow Rate",
             "This is a nominal flow rate value for the load-side of the heat pump"
         )
@@ -62,8 +74,8 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
     def short_name(self) -> str:
         return "WAHP-Heating-CurveFit"
 
-    def required_constant_parameters(self) -> List[BaseValueWithUnit]:
-        # TODO: CDM should hold a dict of strings and values or something, and the equipment can decode it here
+    def get_required_constant_parameters(self) -> List[BaseValueWithUnit]:
+        # TODO: This should just return a list of strings and unit types, that is all that is needed here
         return [
             self.rated_load_volume_flow_rate,
             self.rated_source_volume_flow_rate,
@@ -72,7 +84,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         ]
 
     def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None:
-        my_param_names = self.required_constant_parameters()
+        my_param_names = self.get_required_constant_parameters()
         if parameter_name == my_param_names[0].name:
             self.rated_load_volume_flow_rate.value = new_value
         elif parameter_name == my_param_names[1].name:

@@ -51,13 +51,19 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
     def name(self) -> str:
         return "Water to Water Heat Pump, Heating Mode, Curve Fit Formulation"
 
-    def required_constant_parameters(self) -> List[BaseValueWithUnit]:
+    def short_name(self) -> str:
+        return "WWHP-Heating-CurveFit"
+
+    def get_required_constant_parameters(self) -> List[BaseValueWithUnit]:
         return [
             self.rated_load_volume_flow_rate,
             self.rated_source_volume_flow_rate,
             self.rated_total_capacity,
             self.rated_compressor_power
         ]
+
+    def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None:
+        pass
 
     def headers(self) -> ColumnHeaderArray:
         return ColumnHeaderArray(
@@ -165,11 +171,15 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         }
         return dumps(epjson_object, indent=2)
 
+    def get_number_of_progress_steps(self) -> int:
+        return 3
+
+    def minimum_data_points_for_generation(self) -> int:
+        return 0
+
     def generate_parameters(
-            self, data_manager: CatalogDataManager, cb_progress_initialize: Callable,
-            cb_progress_increment: Callable, cb_progress_done: Callable
+            self, data_manager: CatalogDataManager,  cb_progress_increment: Callable, cb_progress_done: Callable
     ):
-        cb_progress_initialize(3)
         for i in range(3):
             sleep(0.3)
             cb_progress_increment()

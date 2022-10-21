@@ -9,8 +9,13 @@ We'll have a nice walkthrough here, and then here's library documentation.
 
    new_component_type
    new_unit_type
-   forms/main
-   utility
+   equipment/index
+   forms/index
+   correction_factor
+   data_manager
+   exceptions
+   runner
+   units
 
 
 Indices and tables

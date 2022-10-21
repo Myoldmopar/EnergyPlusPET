@@ -12,6 +12,7 @@ tksheet
 
 # for building documentation
 sphinx
+sphinx_rtd_theme
 
 # for running tests
 nose

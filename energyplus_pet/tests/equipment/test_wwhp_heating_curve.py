@@ -12,7 +12,7 @@ class TestWWHPHeatingCurve(EquipmentTestHelper):
     def test_generated_parameters(self):
         eq = WaterToWaterHeatPumpHeatingCurveFit()
         cdm = CatalogDataManager()
-        eq.generate_parameters(cdm, lambda *_: None, lambda *_: None, lambda *_: None)
+        eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)
 
     def test_output_forms(self):
         pass

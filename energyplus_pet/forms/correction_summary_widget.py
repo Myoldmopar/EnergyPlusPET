@@ -9,7 +9,7 @@ from energyplus_pet.equipment.base import BaseEquipment
 
 class CorrectionSummaryWidget(LabelFrame):
     """
-    Defines the correction factor information and can return a Tk Frame
+    This widget returns a Tk.LabelFrame that displays a correction factor summary and is shown on the summary form.
     """
 
     def __init__(self, parent: Frame, name: str, equipment_instance: BaseEquipment, remove_callback: Callable):

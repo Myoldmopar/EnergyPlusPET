@@ -15,7 +15,7 @@ class ColumnHeader:
         :param wb: An optional bool flag for whether this column is an air wet-bulb column
         """
         self.name = column_name
-        self.units = unit  # TODO: Kinda wonder if this should be a unit instance, not sure though
+        self.units = unit
         self.dry_bulb_column_flag = db
         self.wet_bulb_column_flag = wb
 
@@ -27,7 +27,7 @@ class ColumnHeaderArray:
         self.columns = columns
 
     def __len__(self) -> int:
-        """Returns the length of the header array so it can be used in len() expressions"""
+        """Returns the length of the header array, so it can be used in len() expressions"""
         return len(self.columns)
 
     def unit_array(self) -> List[UnitType]:
@@ -39,12 +39,14 @@ class ColumnHeaderArray:
         return [c.name for c in self.columns]
 
     def get_descriptive_summary(self) -> str:
+        """Returns a descriptive summary of this set of column headers"""
         response = ""
         for c in self.columns:
             response += f"{c.name} [{c.units}]\n"
         return response
 
     def get_descriptive_csv(self) -> str:
+        """Returns a CSV summary of this set of column headers"""
         name_row = ','.join(self.name_array())
         unit_row = ','.join([str(u) for u in self.unit_array()])
         return '\n'.join([name_row, unit_row])

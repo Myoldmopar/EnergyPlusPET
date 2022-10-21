@@ -13,6 +13,9 @@ from energyplus_pet.units import unit_instance_factory
 
 
 class DetailedCorrectionFactorForm(Toplevel):
+    """
+    This form is where the user will enter correction factor detailed tabular data
+    """
     class DetailedCorrectionExitCode(Enum):
         Done = auto()
         Cancel = auto()

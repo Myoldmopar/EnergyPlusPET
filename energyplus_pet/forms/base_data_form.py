@@ -13,6 +13,10 @@ from energyplus_pet.units import unit_instance_factory
 
 
 class MainDataForm(Toplevel):
+    """
+    This form is where the user will enter/paste the raw (typically pretty large) base data set, which will ultimately
+    be processed with any correction factors to determine the final data set.
+    """
     class MainDataExitCode(Enum):
         Done = auto()
         Cancel = auto()

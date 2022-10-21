@@ -9,6 +9,9 @@ from energyplus_pet.equipment.base import BaseEquipment
 
 
 class ConstantParameterEntryWidget(Frame):
+    """
+    This form is where the user enters any fixed/rated parameter values for this equipment type
+    """
     def __init__(self, value: BaseValueWithUnit, parent_frame: LabelFrame, units_changed_handler: Callable):
         super().__init__(parent_frame, borderwidth=1, relief=RIDGE)
         self.value = value
@@ -50,7 +53,7 @@ class ConstantParameterEntryForm(Toplevel):
         entries_form = LabelFrame(self, text="Required Parameters")
         self.parameter_value_map = {}
         self.known_parameters = []
-        for rp in equipment.required_constant_parameters():
+        for rp in equipment.get_required_constant_parameters():
             c = ConstantParameterEntryWidget(rp, entries_form, self.check_all_units)
             c.pack(side=TOP, fill=X, expand=True, padx=4, pady=4)
             self.known_parameters.append(c)
