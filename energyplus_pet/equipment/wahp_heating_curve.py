@@ -8,26 +8,26 @@ from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray, ColumnHeader
-from energyplus_pet.units import UnitType, BaseUnit, FlowUnits, PowerUnits
+from energyplus_pet.units import UnitType, BaseValueWithUnit, FlowValue, PowerValue
 
 
 class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
 
     def __init__(self):
         # need some rated parameters that we get from the user for scaling, reporting, etc.
-        self.rated_load_volume_flow_rate = FlowUnits(  # TODO: Get these from a form!
+        self.rated_load_volume_flow_rate = FlowValue(  # TODO: Get these from a form!
             0.0006887, "Rated Load Side Flow Rate",
             "This is a nominal flow rate value for the load-side of the heat pump"
         )
-        self.rated_source_volume_flow_rate = FlowUnits(
+        self.rated_source_volume_flow_rate = FlowValue(
             0.0001892, "Rated Source Side Flow Rate",
             "This is a nominal flow rate value for the source-side of the heat pump"
         )
-        self.rated_total_capacity = PowerUnits(
+        self.rated_total_capacity = PowerValue(
             3.513, "Rated Total Heating Capacity",
             "This is a nominal value of the load-side heating capacity of the heat pump"
         )
-        self.rated_compressor_power = PowerUnits(
+        self.rated_compressor_power = PowerValue(
             0.900, "Rated Compressor Power Use",
             "This is a nominal value of the compressor power for this heat pump"
         )
@@ -62,7 +62,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
     def short_name(self) -> str:
         return "WAHP-Heating-CurveFit"
 
-    def required_constant_parameters(self) -> List[BaseUnit]:
+    def required_constant_parameters(self) -> List[BaseValueWithUnit]:
         # TODO: CDM should hold a dict of strings and values or something, and the equipment can decode it here
         return [
             self.rated_load_volume_flow_rate,

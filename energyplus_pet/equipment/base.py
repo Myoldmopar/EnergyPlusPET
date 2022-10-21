@@ -3,7 +3,7 @@ from typing import Callable, List, Tuple
 
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
-from energyplus_pet.units import BaseUnit
+from energyplus_pet.units import BaseValueWithUnit
 
 
 class BaseEquipment:
@@ -21,7 +21,7 @@ class BaseEquipment:
     def headers(self) -> ColumnHeaderArray: pass
 
     @abstractmethod
-    def required_constant_parameters(self) -> List[BaseUnit]: pass
+    def required_constant_parameters(self) -> List[BaseValueWithUnit]: pass
 
     @abstractmethod
     def set_required_constant_parameter(self, parameter_name: str, new_value: float) -> None: pass

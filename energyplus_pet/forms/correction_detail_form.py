@@ -29,13 +29,13 @@ class DetailedCorrectionFactorForm(Toplevel):
         m_or_r = 'multiplier' if _cf.correction_type == CorrectionFactorType.Multiplier else 'replacement'
         base_column_name = eq.headers().name_array()[_cf.base_column_index]
         dep_column_names = ""
-        for mod_column in _cf.get_columns_to_modify():
+        for mod_column in _cf.columns_to_modify:
             dep_column_names += f"  -- {eq.headers().name_array()[mod_column]}\n"
         Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
 
 This correction factor requires {_cf.num_corrections} {m_or_r} values for {base_column_name}.
 
-The correction factor requires multiplier values for the following {len(_cf.get_columns_to_modify())} column(s):
+The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
 {dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
         #
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
@@ -60,9 +60,9 @@ The correction factor requires multiplier values for the following {len(_cf.get_
             base_column_units_type = eq.headers().unit_array()[_cf.base_column_index]
             dummy_units_instance = unit_instance_factory(0.0, base_column_units_type)
             self.replacement_column_unit_type = eq.headers().unit_array()[_cf.base_column_index]
-            self.replacement_unit_strings = dummy_units_instance.get_unit_strings()
-            self.preferred_replacement_unit_index = dummy_units_instance.calculation_unit()
-            self.preferred_replacement_unit_string = dummy_units_instance.get_unit_strings()[
+            self.replacement_unit_strings = dummy_units_instance.get_unit_string_map()
+            self.preferred_replacement_unit_index = dummy_units_instance.calculation_unit_id()
+            self.preferred_replacement_unit_string = dummy_units_instance.get_unit_string_map()[
                 self.preferred_replacement_unit_index
             ]
             self.replacement_units_string = StringVar(value=self.preferred_replacement_unit_string)
@@ -79,14 +79,14 @@ The correction factor requires multiplier values for the following {len(_cf.get_
         # TODO: The table shouldn't allow resizing, right?
         # TODO: Does db/wb get two independent value columns?
         column_titles = [eq.headers().name_array()[_cf.base_column_index]]
-        for mod_column in _cf.get_columns_to_modify():
+        for mod_column in _cf.columns_to_modify:
             column_titles.append(eq.headers().name_array()[mod_column])
         # TODO: should the following be +2 for db/wb replacement?
         self.table = Sheet(self.tabular_frame)
         pretend_data = []  # TODO: Make sure num_corrections is updated if table size changes
         for row in range(_cf.num_corrections):
             this_row = []
-            for col in range(len(_cf.get_columns_to_modify()) + 1):
+            for col in range(len(_cf.columns_to_modify) + 1):
                 this_row.append(row * col)
             pretend_data.append(this_row)
         self.table.headers(column_titles)
@@ -146,7 +146,7 @@ The correction factor requires multiplier values for the following {len(_cf.get_
             self.completed_factor.base_correction = [
                 float(self.table.get_cell_data(row, 0)) for row in range(self.table.total_rows())
             ]
-            for col_num, equipment_column_index in enumerate(self.completed_factor.get_columns_to_modify()):
+            for col_num, equipment_column_index in enumerate(self.completed_factor.columns_to_modify):
                 this_column = []
                 for row in range(self.table.total_rows()):
                     this_column.append(float(self.table.get_cell_data(row, col_num)))
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     cf = CorrectionFactor('Load Side Temperature Correction')
     cf.num_corrections = 5
     cf.base_column_index = 0
-    cf.set_columns_to_modify([4, 5, 6])
+    cf.columns_to_modify = [4, 5, 6]
     cf.correction_type = CorrectionFactorType.Replacement
     DetailedCorrectionFactorForm(root, cf, WaterToWaterHeatPumpHeatingCurveFit(), 1, 2)
     root.mainloop()

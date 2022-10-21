@@ -76,8 +76,8 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
                 for col in range(len(column_units)):
                     unit_type = column_units[col]
                     unit_instance = unit_instance_factory(0.0, unit_type)
-                    preferred_unit = unit_instance.calculation_unit()
-                    all_unit_strings = unit_instance.get_unit_strings()
+                    preferred_unit = unit_instance.calculation_unit_id()
+                    all_unit_strings = unit_instance.get_unit_string_map()
                     preferred_unit_string = all_unit_strings[preferred_unit]
                     self.columnar_unit_types.append(unit_type)
                     self.columnar_preferred_unit_strings.append(preferred_unit_string)
@@ -206,13 +206,13 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
                 # create a dummy value for this unit type -- wrong
                 unit_instance_this_column = unit_instance_factory(0.0, self.columnar_unit_types[c])
                 # get the full set of unit strings to look the index back up
-                unit_strings = unit_instance_this_column.get_unit_strings()
+                unit_strings = unit_instance_this_column.get_unit_string_map()
                 units_index_now = unit_strings.index(units_value_this_column)
                 for r in range(self.table.total_rows()):
                     # if r == 0:
                     #     pass
                     if r == 0:
-                        self.table.set_cell_data(r, c, unit_strings[unit_instance_this_column.calculation_unit()])
+                        self.table.set_cell_data(r, c, unit_strings[unit_instance_this_column.calculation_unit_id()])
                     else:
                         cell_value = float(self.table.get_cell_data(r, c))
                         unit_value = unit_instance_factory(cell_value, self.columnar_unit_types[c])

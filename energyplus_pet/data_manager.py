@@ -1,43 +1,46 @@
 from copy import deepcopy
 from enum import auto, Enum
-from typing import List
+from typing import Dict, List
 
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
+from energyplus_pet.units import BaseValueWithUnit
 
 
 class CatalogDataManager:
     """
-
+    This class represents a data manager for the entire catalog data set.  This includes
+    the primary tabular data, plus any correction factors applied to the data.
+    While the equipment definitions define the types of data, the data manager actually stores the data.
+    The equipment instances read data from the catalog data manager when processing parameters.
     """
 
     def __init__(self):
         """
-
+        Create a new CatalogDataManager instance, initializing arrays and flags.
         """
         self.correction_factors: List[CorrectionFactor] = []
-        # allocate the inner array to the number of columns
-        # this implies it will be the second index in the lookup
-        # self.base_data[data_point][column]
-        self.base_data: List[List[float]] = []
+        self.base_data: List[List[float]] = []  # inner arrays are column allocated: self.base_data[data_point][column]
+        self.constant_parameters: Dict[str, BaseValueWithUnit]
         self.data_processed = False
         self.final_data_matrix: List[List[float]] = []
         self.last_error_message = ""
 
-    def add_correction_factor(self, cf: CorrectionFactor):
+    def add_correction_factor(self, cf: CorrectionFactor) -> None:
         """
         Add a completed correction factor, with summary data and detailed data.
 
-        :param cf:
-        :return:
+        :param cf: A correction factor instance, expecting to be fully fleshed out with summary and detailed data.
+        :return: None
         """
         self.correction_factors.append(cf)
 
-    def add_base_data(self, data: List[List[float]]):
+    def add_base_data(self, data: List[List[float]]) -> None:
         """
-        Add base data in rows.  The array lookup should be data[row][column]
+        Add base data as a list of data point rows, so the array lookup should be data[row][column].
+        The data should already be in the calculation_unit for each column.
 
-        :param data:
-        :return:
+        :param data: Catalog base data set in proper units
+        :return: None
         """
         self.base_data = data
 
@@ -45,12 +48,13 @@ class CatalogDataManager:
         OK = auto()
         ERROR = auto()
 
-    def process(self, minimum_data_points: int) -> ProcessResult:
+    def apply_correction_factors(self, minimum_data_points: int) -> ProcessResult:
         """
-        Process the base data and correction factors to create one large full dataset
-        Validates the data against a series of tests for data diversity and infinite/out-of-range
+        Process the base data and correction factors to create one large full dataset.
+        Validates the data against a series of tests for data diversity and infinite/out-of-range.
 
-        :return: Tuple[bool, str], Bool indicates if the data processing was successful; if not, str is a status message
+        :return: A ProcessResult enum instance for the success of the process.  If ERROR, then there is a
+                 ``last_error_message`` member variable with an explanation of what went wrong.
         """
         # TODO: Add a check() method on the correction factor to validate all the array and index lengths
         # TODO: Assert the sizes of base data and cf match here
@@ -65,7 +69,7 @@ class CatalogDataManager:
                         new_row[cf.base_column_index] *= cf.base_correction[cf_row]
                     else:  # Replacement
                         new_row[cf.base_column_index] = cf.base_correction[cf_row]
-                    for column_to_modify in cf.get_columns_to_modify():
+                    for column_to_modify in cf.columns_to_modify:
                         new_row[column_to_modify] *= cf.mod_correction_data_column_map[column_to_modify][cf_row]
                     self.final_data_matrix.append(new_row)
         if len(self.final_data_matrix) < minimum_data_points:
@@ -74,11 +78,15 @@ class CatalogDataManager:
             return CatalogDataManager.ProcessResult.ERROR
         return CatalogDataManager.ProcessResult.OK
 
-    def reset(self):
+    def reset(self) -> None:
         """
+        Resets the catalog data manager to an original state.
 
-        :return:
+        :return: None
         """
         self.correction_factors.clear()
         self.data_processed = False
-        self.base_data = [[]]
+        self.base_data = []
+        self.constant_parameters: Dict[str, BaseValueWithUnit]
+        self.final_data_matrix: List[List[float]] = []
+        self.last_error_message = ""

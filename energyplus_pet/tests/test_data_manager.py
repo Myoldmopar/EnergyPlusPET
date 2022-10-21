@@ -3,6 +3,7 @@ from unittest import TestCase
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
+from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class TestDataManager(TestCase):
@@ -17,7 +18,7 @@ class TestDataManager(TestCase):
         # cf = CorrectionFactor('blah')
         # cdm.add_correction_factor(cf)
         # cdm.add_base_data([])
-        status = cdm.process(minimum_data_points=0)
+        status = cdm.apply_correction_factors(minimum_data_points=0)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         cdm.reset()
 
@@ -28,9 +29,18 @@ class TestDataManager(TestCase):
             [1, 2, 3, 4],
             [2, 3, 4, 5]
         ])
-        status = cdm.process(minimum_data_points=0)
+        status = cdm.apply_correction_factors(minimum_data_points=0)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(3, len(cdm.final_data_matrix))
+
+    def test_process_not_enough_data(self):
+        cdm = CatalogDataManager()
+        cdm.add_base_data([
+            [0, 1, 2, 3],
+            [1, 2, 3, 4],
+            [2, 3, 4, 5]
+        ])
+        self.assertEqual(CatalogDataManager.ProcessResult.ERROR, cdm.apply_correction_factors(minimum_data_points=4))
 
     def test_process_with_multiplier_factor(self):
         cdm = CatalogDataManager()
@@ -38,7 +48,7 @@ class TestDataManager(TestCase):
         cf.correction_type = CorrectionFactorType.Multiplier
         cf.base_column_index = 0
         cf.base_correction = [2.0]
-        cf.set_columns_to_modify([1, 3])
+        cf.columns_to_modify = [1, 3]
         cf.mod_correction_data_column_map = {
             1: [0.5],  # column 1 should be halved (zero index)
             3: [2.0]  # column 3 should be doubled
@@ -47,7 +57,7 @@ class TestDataManager(TestCase):
         cdm.add_base_data([
             [1.0, 2.0, 3.0, 4.0]
         ])
-        status = cdm.process(minimum_data_points=0)
+        status = cdm.apply_correction_factors(minimum_data_points=0)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(
             [
@@ -64,7 +74,7 @@ class TestDataManager(TestCase):
         cf.correction_type = CorrectionFactorType.Replacement
         cf.base_column_index = 0
         cf.base_correction = [0, 2]
-        cf.set_columns_to_modify([4, 5])
+        cf.columns_to_modify = [4, 5]
         cf.mod_correction_data_column_map = {4: [0.5, 1.2], 5: [0.4, 1.1]}
         cdm.add_correction_factor(cf)
 
@@ -72,7 +82,7 @@ class TestDataManager(TestCase):
         cf.correction_type = CorrectionFactorType.Replacement
         cf.base_column_index = 2
         cf.base_correction = [0, 3]
-        cf.set_columns_to_modify([4, 5])
+        cf.columns_to_modify = [4, 5]
         cf.mod_correction_data_column_map = {4: [0.6, 1.3], 5: [0.5, 1.8]}
         cdm.add_correction_factor(cf)
 
@@ -80,7 +90,7 @@ class TestDataManager(TestCase):
         cf.correction_type = CorrectionFactorType.Multiplier
         cf.base_column_index = 1
         cf.base_correction = [0.5, 1.2]
-        cf.set_columns_to_modify([4, 5])
+        cf.columns_to_modify = [4, 5]
         cf.mod_correction_data_column_map = {4: [0.8, 1.1], 5: [0.3, 1.7]}
         cdm.add_correction_factor(cf)
 
@@ -88,14 +98,14 @@ class TestDataManager(TestCase):
         cf.correction_type = CorrectionFactorType.Multiplier
         cf.base_column_index = 3
         cf.base_correction = [0.4, 1.4]
-        cf.set_columns_to_modify([4, 5])
+        cf.columns_to_modify = [4, 5]
         cf.mod_correction_data_column_map = {4: [0.6, 1.2], 5: [0.4, 1.4]}
         cdm.add_correction_factor(cf)
 
         cdm.add_base_data([
             [1, 1, 1, 1, 200, 10]
         ])
-        status = cdm.process(minimum_data_points=0)
+        status = cdm.apply_correction_factors(minimum_data_points=0)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(81, len(cdm.final_data_matrix))
 

@@ -4,17 +4,17 @@ from tkinter import TOP, X, RIDGE, BOTH  # appearance stuff
 from tkinter import StringVar, DoubleVar  # dynamic variables
 from typing import Callable
 
-from energyplus_pet.units import BaseUnit
+from energyplus_pet.units import BaseValueWithUnit
 from energyplus_pet.equipment.base import BaseEquipment
 
 
 class ConstantParameterEntryWidget(Frame):
-    def __init__(self, value: BaseUnit, parent_frame: LabelFrame, units_changed_handler: Callable):
+    def __init__(self, value: BaseValueWithUnit, parent_frame: LabelFrame, units_changed_handler: Callable):
         super().__init__(parent_frame, borderwidth=1, relief=RIDGE)
         self.value = value
         self.units_changed_handler = units_changed_handler
         p = 4
-        self.unit_strings = self.value.get_unit_strings()
+        self.unit_strings = self.value.get_unit_string_map()
         self.target_unit = self.unit_strings[self.value.units]
         Label(self, text=self.value.name).grid(row=0, column=0, padx=p, pady=p)
         Label(self, text=self.value.description).grid(row=1, column=0, padx=p, pady=p)

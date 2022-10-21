@@ -43,7 +43,7 @@ class CorrectionSummaryWidget(LabelFrame):
             self.cf.correction_type = CorrectionFactorType.Replacement
         mod_column = self.var_base_column.get()
         self.cf.base_column_index = self.equip_instance.headers().name_array().index(mod_column)
-        self.cf.set_columns_to_modify(self.columns_listbox.curselection())
+        self.cf.columns_to_modify = self.columns_listbox.curselection()
 
     def _setup_removal_callback(self, remove_callback: Callable):
         self.remove_me = False

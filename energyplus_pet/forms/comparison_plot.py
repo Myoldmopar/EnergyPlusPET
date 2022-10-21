@@ -6,6 +6,7 @@ from tkinter.ttk import Notebook
 
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.exceptions import EnergyPlusPetException
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -55,7 +56,7 @@ class ComparisonPlot(Toplevel):
                 elif pd[1] == 'point':
                     line_arg = '--'
                 else:
-                    raise Exception('bad line type')
+                    raise EnergyPlusPetException('bad line type')
                 a.plot(np.array(pd[3]), label=pd[0], linestyle=line_arg, color=pd[2])
             a.legend()
             a.set_title(plot_title, fontsize=16)
