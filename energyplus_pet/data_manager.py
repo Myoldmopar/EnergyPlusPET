@@ -57,7 +57,6 @@ class CatalogDataManager:
                  ``last_error_message`` member variable with an explanation of what went wrong.
         """
         # TODO: Add a check() method on the correction factor to validate all the array and index lengths
-        # TODO: Assert the sizes of base data and cf match here
         self.data_processed = True
         self.final_data_matrix = self.base_data
         for cf in self.correction_factors:

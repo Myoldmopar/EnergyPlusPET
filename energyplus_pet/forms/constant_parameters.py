@@ -6,7 +6,6 @@ from typing import Callable
 
 from energyplus_pet.units import unit_class_factory, unit_instance_factory
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class ConstantParameterEntryWidget(Frame):
@@ -34,10 +33,10 @@ class ConstantParameterEntryWidget(Frame):
         self._units_changed_handler = units_ch_handler
         p = 4
         self._unit_type = rp.unit_type
-        unit_type_class = unit_class_factory(self._unit_type)
-        self._unit_id_to_string_mapping = unit_type_class.get_unit_string_map()
+        self._unit_type_class = unit_class_factory(self._unit_type)
+        self._unit_id_to_string_mapping = self._unit_type_class.get_unit_string_map()
         unit_strings = list(self._unit_id_to_string_mapping.values())
-        preferred_unit_id = unit_type_class.calculation_unit_id()
+        preferred_unit_id = self._unit_type_class.calculation_unit_id()
         self._preferred_unit_string = self._unit_id_to_string_mapping[preferred_unit_id]
         Label(self, text=rp.title).grid(row=0, column=0, padx=p, pady=p)
         Label(self, text=rp.description).grid(row=1, column=0, padx=p, pady=p)
@@ -63,14 +62,7 @@ class ConstantParameterEntryWidget(Frame):
         :return: Nothing
         """
         current_units_string = self.var_units_string.get()
-        # get the ID of the current unit
-        # TODO: Make this a function in the base unit class
-        current_unit_id = None
-        for k, v in self._unit_id_to_string_mapping.items():
-            if v == current_units_string:
-                current_unit_id = k
-        if not current_unit_id:
-            raise EnergyPlusPetException("WHAT?")
+        current_unit_id = self._unit_type_class.get_id_from_unit_string(current_units_string)
         current_value = self.var_value.get()
         unit_value = unit_instance_factory(current_value, self._unit_type)
         unit_value.units = current_unit_id

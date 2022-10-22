@@ -54,6 +54,22 @@ class BaseValueWithUnit:
     def get_unit_string_map() -> TypingOD[str, str]:
         pass
 
+    @classmethod
+    def get_id_from_unit_string(cls, current_units_string: str) -> str:
+        """
+        Looks up the ID of a unit for the current type given the unit string
+
+        :param current_units_string: A string of units to search for, such as 'kg/s'
+        :return: An internal string ID of the unit matching what comes from get_unit_ids()
+        """
+        # TODO: Catch the exception in places that use this
+        for k, v in cls.get_unit_string_map().items():
+            if v == current_units_string:
+                return k
+        raise EnergyPlusPetException(
+            f"No ID for unit string: {current_units_string}; possible units = {cls.get_unit_string_map().values()}"
+        )
+
     @staticmethod
     @abstractmethod
     def calculation_unit_id() -> str:

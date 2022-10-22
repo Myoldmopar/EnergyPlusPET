@@ -9,7 +9,6 @@ from typing import List
 from tksheet import Sheet
 
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.exceptions import EnergyPlusPetException
 from energyplus_pet.units import unit_class_factory, unit_instance_factory
 
 
@@ -34,32 +33,7 @@ class MainDataForm(Toplevel):
             self, text="""Now it's time to copy in the bulk of the catalog data.
 To be brought in properly, the data should be divided into columns, delimited by tab characters.
 This is the way most spreadsheets will store data in the clipboard, so the preferred approach is
-to paste/cleanup the data in a spreadsheet, then copy the data and use the button below to paste here."""
-        ).pack(
-            side=TOP, fill=X, expand=False, padx=p, pady=p
-        )
-        button_frame_base_controls = Frame(self)
-        Button(
-            button_frame_base_controls, text="Paste data from clipboard", command=self._paste_from_clipboard
-        ).grid(
-            row=0, column=0, padx=p, pady=p
-        )
-        Button(
-            button_frame_base_controls, text="Clear Table Data", command=self._clear_table_data
-        ).grid(
-            row=0, column=1, padx=p, pady=p
-        )
-        Button(
-            button_frame_base_controls, text="Add More Table Rows", command=self._add_more_table_rows
-        ).grid(
-            row=0, column=2, padx=p, pady=p
-        )
-        button_frame_base_controls.grid_columnconfigure(ALL, weight=1)
-        button_frame_base_controls.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
-        Label(
-            self,
-            text="""Once the numeric data is in place, set the numeric units for each column, conform the data if
- necessary, and press OK to complete."""
+to paste/cleanup the data in a spreadsheet, then copy the data and paste directly in the table here."""
         ).pack(
             side=TOP, fill=X, expand=False, padx=p, pady=p
         )
@@ -73,6 +47,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         pretend_data = []
         # TODO: Can we just tag a column with a dict of extra data rather than separate lists?
         self.columnar_unit_types = []
+        self.columnar_unit_type_classes = []
         self.columnar_unit_id_to_string_mapping = []  # keep this for convenience
         self.columnar_preferred_unit_string = []
         self.columnar_units_are_preferred = []  # boolean check
@@ -82,6 +57,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
                 for col in range(len(column_units)):
                     this_column_unit_type = column_units[col]
                     this_column_unit_type_class = unit_class_factory(this_column_unit_type)
+                    self.columnar_unit_type_classes.append(this_column_unit_type_class)
                     this_column_unit_id_to_string_mapping = this_column_unit_type_class.get_unit_string_map()
                     this_column_unit_strings = list(this_column_unit_id_to_string_mapping.values())
                     this_column_preferred_unit_id = this_column_unit_type_class.calculation_unit_id()
@@ -120,14 +96,27 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         # self.table.extra_bindings("end_edit_cell", func=self.cell_edited)
         # self.table.extra_bindings("end_paste", func=self.cells_pasted)
 
+        Label(
+            self,
+            text="""Once the numeric data is in place, set the numeric units for each column, conform the data if
+         necessary, and continue the wizard."""
+        ).pack(
+            side=TOP, fill=X, expand=False, padx=p, pady=p
+        )
+
         #
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
         bottom_button_frame = Frame(self)
         Button(
-            bottom_button_frame, text="Repair Data Column Order", state=DISABLED, command=self._repair
+            bottom_button_frame, text="Add More Table Rows", command=self._add_more_table_rows
         ).grid(
             row=0, column=0, padx=p, pady=p
+        )
+        Button(
+            bottom_button_frame, text="Repair Data Column Order", state=DISABLED, command=self._repair
+        ).grid(
+            row=0, column=1, padx=p, pady=p
         )
         quick_convert_label_frame = LabelFrame(bottom_button_frame, text="Quick Convert Units")
         Button(
@@ -140,30 +129,26 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         ).grid(
             row=0, column=1, padx=p, pady=p
         )
-        quick_convert_label_frame.grid(row=0, column=1, padx=p, pady=p)
+        quick_convert_label_frame.grid(row=0, column=2, padx=p, pady=p)
         self.done_conform_text = StringVar(value="Done, Continue")
         Button(
             bottom_button_frame, textvariable=self.done_conform_text, command=self._done_or_conform
         ).grid(
-            row=0, column=2, padx=p, pady=p
+            row=0, column=3, padx=p, pady=p
         )
         Button(
             bottom_button_frame, text="Cancel", command=self.cancel
-        ).grid(row=0, column=3, padx=p, pady=p)
+        ).grid(row=0, column=4, padx=p, pady=p)
         bottom_button_frame.grid_columnconfigure(ALL, weight=1)
         bottom_button_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
-        # draw factors, in case there already are any
-        # self.draw_factors()
-        # set up connections/config calls as needed
-        pass
         # finalize UI operations
         self.grab_set()
         self.transient(parent_window)
 
-    def _paste_from_clipboard(self): pass
-    def _clear_table_data(self): pass
-    def _add_more_table_rows(self): pass
+    def _add_more_table_rows(self):
+        self.table.insert_rows(rows=10, redraw=True)
+
     def _repair(self): pass
     def _quick_convert_ip(self): pass
     def _quick_convert_si(self): pass
@@ -211,17 +196,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
         for c in range(self.table.total_columns()):
             current_units_string = self.table.get_cell_data(0, c)
             if current_units_string != self.columnar_preferred_unit_string[c]:
-                current_unit_id = None
-                for k, v in self.columnar_unit_id_to_string_mapping[c].items():
-                    if v == current_units_string:
-                        current_unit_id = k
-                if not current_unit_id:
-                    raise EnergyPlusPetException("WHAT?")
-                # create a dummy value for this unit type -- wrong
-                # unit_instance_this_column = unit_instance_factory(0.0, self.columnar_unit_types[c])
-                # # get the full set of unit strings to look the index back up
-                # unit_strings = unit_instance_this_column.get_unit_string_map()
-                # units_index_now = unit_strings.index(current_units_string)
+                current_unit_id = self.columnar_unit_type_classes[c].get_id_from_unit_string(current_units_string)
                 for r in range(self.table.total_rows()):
                     if r == 0:
                         self.table.set_cell_data(r, c, self.columnar_preferred_unit_string[c])
@@ -242,8 +217,8 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
 
     root = Tk()
-    MainDataForm(root, WaterToWaterHeatPumpHeatingCurveFit())
+    MainDataForm(root, WaterToAirHeatPumpHeatingCurveFit())
     root.mainloop()

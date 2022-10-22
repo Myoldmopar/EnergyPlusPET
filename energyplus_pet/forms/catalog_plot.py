@@ -34,13 +34,13 @@ class CatalogDataPlotForm(Toplevel):
         style.configure('my.TNotebook', tabposition='wn')
         plot_notebook = Notebook(self, style='my.TNotebook')
         plot_data = []
-        for col_num in range(len(eq.headers().name_array())):  # TODO: Just loop over headers here
+        for col_num in range(len(eq.headers().name_array())):
             line_title = eq.headers().name_array()[col_num]
-            line_unit_type = eq.headers().unit_array()[col_num]  # TODO: Each header should store a dummy unit instance
+            line_unit_type = eq.headers().unit_array()[col_num]
             dummy_unit_instance = unit_instance_factory(0.0, line_unit_type)
             line_unit_string = dummy_unit_instance.get_unit_string_map()[dummy_unit_instance.calculation_unit_id()]
             data_vector = [row[col_num] for row in cdm.final_data_matrix]
-            x_values = list(range(len(data_vector)))
+            x_values = list(range(len(data_vector)))  # TODO: Allow optional x_values to be passed in
             plot_data.append(
                 (line_title, x_values, data_vector, line_unit_string)
             )

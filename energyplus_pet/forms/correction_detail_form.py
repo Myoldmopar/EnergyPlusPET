@@ -9,7 +9,6 @@ from tksheet import Sheet
 
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.equipment.base import BaseEquipment
-from energyplus_pet.exceptions import EnergyPlusPetException
 from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue
 
 
@@ -70,13 +69,13 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             # this returns a UnitType enum type of unit, such as UnitType.Temperature or UnitType.FlowRate
             self.replacement_column_unit_type = eq.headers().unit_array()[_cf.base_column_index]
             # this returns a class "type" not an instance, so like TemperatureUnits or PowerUnits
-            unit_type_class = unit_class_factory(self.replacement_column_unit_type)
+            self.unit_type_class = unit_class_factory(self.replacement_column_unit_type)
             # for this specific unit type, get a mapping of the underlying ids to user-consumable names {'some_id': 'W'}
-            self.unit_id_to_string_mapping = unit_type_class.get_unit_string_map()
+            self.unit_id_to_string_mapping = self.unit_type_class.get_unit_string_map()
             # one thing we need is a list of all the user-facing unit names, such as ['W', 'kW']
             replacement_unit_strings = list(self.unit_id_to_string_mapping.values())
             # store the preferred replacement_unit id and string
-            preferred_replacement_unit_id = unit_type_class.calculation_unit_id()
+            preferred_replacement_unit_id = self.unit_type_class.calculation_unit_id()
             self.preferred_replacement_unit_string = self.unit_id_to_string_mapping[preferred_replacement_unit_id]
             # create a Tk variable to store the currently shown user string for replacement units
             self.replacement_units_string = StringVar(value=self.preferred_replacement_unit_string)
@@ -170,17 +169,8 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self.destroy()
 
     def conform_units(self):
-        # get the current string of units, could also get an
         current_units_string = self.replacement_units_string.get()
-        # get the ID of the current unit
-        # TODO: Make this a function in the base unit class
-        current_unit_id = None
-        for k, v in self.unit_id_to_string_mapping.items():
-            if v == current_units_string:
-                current_unit_id = k
-        if not current_unit_id:
-            raise EnergyPlusPetException("WHAT?")
-        # END: Make this a function in the base unit class
+        current_unit_id = self.unit_type_class.get_id_from_unit_string(current_units_string)
         for r in range(self.table.total_rows()):
             cell_value = float(self.table.get_cell_data(r, 0))
             unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)
@@ -199,7 +189,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
 
     root = Tk()
     def b(*_): print("hey")
@@ -209,5 +199,5 @@ if __name__ == "__main__":
     cf.base_column_index = 0
     cf.columns_to_modify = [4, 5, 6]
     cf.correction_type = CorrectionFactorType.Replacement
-    DetailedCorrectionFactorForm(root, cf, WaterToWaterHeatPumpHeatingCurveFit(), 1, 2)
+    DetailedCorrectionFactorForm(root, cf, WaterToAirHeatPumpHeatingCurveFit(), 1, 2)
     root.mainloop()
