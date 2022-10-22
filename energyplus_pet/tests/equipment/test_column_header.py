@@ -22,6 +22,7 @@ class TestColumnHeaderArray(TestCase):
         self.assertIsInstance(array.get_descriptive_csv(), str)
         self.assertEqual(0, array.get_db_column())
         self.assertEqual(1, array.get_wb_column())
+        self.assertIsInstance(len(array), int)  # ensures that __len__ works
 
     def test_missing_db_wb(self):
         array = ColumnHeaderArray([])

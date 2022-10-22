@@ -16,3 +16,4 @@ class TestBaseEquipmentFunctions(TestCase):
 """
         output = eq.fill_eplus_object_format(object_name, fields)
         self.assertEqual(expected, output)
+        self.assertIsInstance(eq.get_extra_regression_metrics(), tuple)

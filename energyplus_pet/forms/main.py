@@ -428,7 +428,7 @@ class EnergyPlusPetWindow(Tk):
         if self._equip_instance is None:
             self._tk_var_status_equip.set("Selected Equipment: NONE")
         else:
-            self._tk_var_status_equip.set(f"Selected Equipment: {self._equip_instance.name()}")
+            self._tk_var_status_equip.set(f"Selected Equipment: {self._equip_instance.short_name()}")
         if not self._catalog_data_manager.data_processed:
             self._tk_var_status_data.set("Catalog data: NOT READY")
         else:

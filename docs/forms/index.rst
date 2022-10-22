@@ -16,3 +16,4 @@ Talk about the forms here
    catalog_plot
    constant_parameters
    comparison_plot
+   basic_message_form

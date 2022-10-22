@@ -41,17 +41,17 @@ class BaseValueWithUnit:
             self.units = self.calculation_unit_id()
 
     @abstractmethod
-    def get_unit_type(self) -> UnitType:
+    def get_unit_type(self) -> UnitType:  # pragma: no cover
         pass
 
     @staticmethod
     @abstractmethod
-    def get_unit_ids() -> List[str]:
+    def get_unit_ids() -> List[str]:  # pragma: no cover
         pass
 
     @staticmethod
     @abstractmethod
-    def get_unit_string_map() -> TypingOD[str, str]:
+    def get_unit_string_map() -> TypingOD[str, str]:  # pragma: no cover
         pass
 
     @classmethod
@@ -71,21 +71,21 @@ class BaseValueWithUnit:
 
     @staticmethod
     @abstractmethod
-    def calculation_unit_id() -> str:
+    def calculation_unit_id() -> str:  # pragma: no cover
         pass
 
     @staticmethod
     @abstractmethod
-    def base_ip_unit_id() -> str:
+    def base_ip_unit_id() -> str:  # pragma: no cover
         pass
 
     @staticmethod
     @abstractmethod
-    def base_si_unit() -> str:
+    def base_si_unit() -> str:  # pragma: no cover
         pass
 
     @abstractmethod
-    def convert_to_calculation_unit(self):
+    def convert_to_calculation_unit(self):  # pragma: no cover
         pass
 
     def __str__(self) -> str:

@@ -254,8 +254,8 @@ class BaseEquipment:
             independent_variable_arrays,
             dependent_variable_array
         )
-        cooling_capacity_params = curve_fit_response[0]
-        calculated_parameters = list(cooling_capacity_params)
+        raw_parameters = curve_fit_response[0]
+        calculated_parameters = list(raw_parameters)
         average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
         return calculated_parameters, average_err_one_sigma
 

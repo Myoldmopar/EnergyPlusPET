@@ -36,6 +36,12 @@ class TestLayer(TestCase):
         self.assertEqual(value, unit_value_instance.value)
         self.assertEqual(unit_id, unit_value_instance.units)
         self.assertEqual(self.unit_type, unit_value_instance.get_unit_type())
+        calculation_unit_id = unit.calculation_unit_id()
+        calculation_unit_string = unit.get_unit_string_map()[calculation_unit_id]
+        looked_up_id = unit.get_id_from_unit_string(calculation_unit_string)
+        self.assertEqual(looked_up_id, calculation_unit_id)
+        with self.assertRaises(EnergyPlusPetException):
+            unit.get_id_from_unit_string('MADE UP STRING')
 
     def worker_conversion(self, init_val: float, init_unit_id: str, expected_val: float, places: int):
         if self.unit_type is None:  # pragma: no cover, should never get here, fix the unit test
@@ -45,6 +51,13 @@ class TestLayer(TestCase):
         u.convert_to_calculation_unit()
         self.assertAlmostEqual(expected_val, u.value, places)
         self.assertEqual(u.calculation_unit_id(), u.units)
+
+
+class TestMisc(TestLayer):
+    def test_bad_unit_id(self):
+        # ensure bad units raises an exception
+        with self.assertRaises(EnergyPlusPetException):
+            LengthValue(0.0, 'n', 'd', PowerValue.Kilowatts)
 
 
 class TestPowerUnits(TestLayer):

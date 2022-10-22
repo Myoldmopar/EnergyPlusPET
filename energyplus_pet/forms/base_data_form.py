@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from tkinter import Toplevel, Frame, LabelFrame  # containers
 from tkinter import Button, Label  # widgets
-from tkinter import HORIZONTAL, TOP, X, BOTH, ALL, DISABLED  # appearance attributes
+from tkinter import HORIZONTAL, TOP, X, BOTH, ALL  # appearance attributes
 from tkinter import StringVar  # dynamic variables
 from tkinter.ttk import Separator
 from typing import List
@@ -25,6 +25,7 @@ class MainDataForm(Toplevel):
 
     def __init__(self, parent_window, eq: BaseEquipment):
         super().__init__(parent_window, height=200, width=200)
+        self.title(f"{parent_window.title()}: Main Catalog Data Input")
         p = 4
         self.equipment_instance = eq
         self.exit_code = MainDataForm.MainDataExitCode.Done
@@ -51,6 +52,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.columnar_unit_types = []
         self.columnar_unit_type_classes = []
         self.columnar_unit_id_to_string_mapping = []  # keep this for convenience
+        self.columnar_ip_unit_string = []
         self.columnar_preferred_unit_string = []
         self.columnar_units_are_preferred = []  # boolean check
         for row in range(6):  # TODO: Add support to add more rows, then when reading data, check for blank
@@ -67,6 +69,9 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                     self.columnar_unit_types.append(this_column_unit_type)
                     self.columnar_unit_id_to_string_mapping.append(this_column_unit_id_to_string_mapping)
                     self.columnar_preferred_unit_string.append(preferred_unit_string)
+                    self.columnar_ip_unit_string.append(
+                        this_column_unit_id_to_string_mapping[this_column_unit_type_class.base_ip_unit_id()]
+                    )
                     self.columnar_units_are_preferred.append(True)
                     this_row.append(f"{preferred_unit_string}")
                     self.table.create_dropdown(
@@ -76,7 +81,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                         set_value=preferred_unit_string,
                         state="readonly",
                         redraw=False,
-                        selection_function=self._units_dropdown_changed,
+                        selection_function=self._units_changed,
                         modified_function=None
                     )
             else:
@@ -91,6 +96,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
+        self.expected_num_columns = self.table.total_columns()  # save this to verify later
         tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
         # https://github.com/ragardner/tksheet/blob/master/DOCUMENTATION.md#25-example-custom-right-click-and-text-editor-functionality
 
@@ -115,11 +121,11 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         ).grid(
             row=0, column=0, padx=p, pady=p
         )
-        Button(
-            bottom_button_frame, text="Repair Data Column Order", state=DISABLED, command=self._repair
-        ).grid(
-            row=0, column=1, padx=p, pady=p
-        )
+        # Button(
+        #     bottom_button_frame, text="Repair Data Column Order", state=DISABLED, command=self._repair
+        # ).grid(
+        #     row=0, column=1, padx=p, pady=p
+        # )
         quick_convert_label_frame = LabelFrame(bottom_button_frame, text="Quick Convert Units")
         Button(
             quick_convert_label_frame, text="IP Units", command=self._quick_convert_ip
@@ -151,16 +157,24 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
     def _add_more_table_rows(self):
         self.table.insert_rows(rows=10, redraw=True)
 
-    def _repair(self): pass
-    def _quick_convert_ip(self): pass
-    def _quick_convert_si(self): pass
+    # def _repair(self): pass
 
-    def _units_dropdown_changed(self, edit_cell_event):
-        this_column = edit_cell_event.column
+    def _quick_convert_ip(self):
+        for col_num in range(self.table.total_columns()):
+            self.table.set_cell_data(0, col_num, self.columnar_ip_unit_string[col_num], redraw=True)
+        self._units_changed()
+
+    def _quick_convert_si(self):
+        for col_num in range(self.table.total_columns()):
+            self.table.set_cell_data(0, col_num, self.columnar_preferred_unit_string[col_num], redraw=True)
+        self._units_changed()
+
+    def _units_changed(self, dropdown_edit_cell_event=None):
+        this_column = dropdown_edit_cell_event.column if dropdown_edit_cell_event else None
         self.need_to_conform_units = False
         for c in range(self.table.total_columns()):
             if c == this_column:
-                units_value_this_column = edit_cell_event.text  # currently being modified
+                units_value_this_column = dropdown_edit_cell_event.text  # currently being modified
             else:
                 units_value_this_column = self.table.get_cell_data(0, c)  # just get the data from the cell
             if units_value_this_column != self.columnar_preferred_unit_string[c]:
@@ -181,6 +195,15 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         if self.need_to_conform_units:
             self.conform_units()
         else:
+            if self.expected_num_columns != self.table.total_columns():
+                message_window = PetMessageForm(
+                    self,
+                    "Problem with Table Size",
+                    "It appears the table column size does not match the expected size, this is odd, cancel and retry",
+                    justify_message_left=True
+                )
+                self.wait_window(message_window)
+                return
             self.exit_code = MainDataForm.MainDataExitCode.Done
             self.final_base_data_rows = []
             for row in range(self.table.total_rows()):
