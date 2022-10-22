@@ -85,7 +85,7 @@ class CatalogDataPlotForm(Toplevel):
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
 
     window = Tk()
     _cdm = CatalogDataManager()

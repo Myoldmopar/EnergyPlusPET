@@ -1,12 +1,12 @@
 from energyplus_pet.data_manager import CatalogDataManager
-from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+from energyplus_pet.equipment.wahp_cooling_curve import WaterToAirHeatPumpCoolingCurveFit
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.tests.equipment.equipment_test_helper import EquipmentTestHelper
 
 
-class TestWWHPHeatingCurve(EquipmentTestHelper):
+class TestWAHPCoolingCurve(EquipmentTestHelper):
     def test_interface(self):
-        eq = WaterToWaterHeatPumpHeatingCurveFit()
+        eq = WaterToAirHeatPumpCoolingCurveFit()
         eq.total_capacity_params = [0] * 5
         eq.sensible_capacity_params = [0] * 5
         eq.compressor_power_params = [0] * 5
@@ -14,10 +14,10 @@ class TestWWHPHeatingCurve(EquipmentTestHelper):
         eq.set_required_constant_parameter(eq.rated_source_volume_flow_rate_key, 10)
         eq.set_required_constant_parameter(eq.rated_total_capacity_key, 10)
         eq.set_required_constant_parameter(eq.rated_compressor_power_key, 1)
-        self.check_interface(eq, EquipType.WWHP_Heating_CurveFit)
+        self.check_interface(eq, EquipType.WAHP_Cooling_CurveFit)
 
     def test_generated_parameters(self):
-        eq = WaterToWaterHeatPumpHeatingCurveFit()
+        eq = WaterToAirHeatPumpCoolingCurveFit()
         cdm = CatalogDataManager()
         cdm.final_data_matrix = [
             [1, 1, 1, 1, 28389.1700353357, 5535.105795053, 22854.0642402827],

@@ -3,6 +3,7 @@ from unittest import TestCase
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
+from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class EquipmentTestHelper(TestCase):
@@ -27,3 +28,5 @@ class EquipmentTestHelper(TestCase):
         self.assertIsInstance(eq.get_extra_regression_metrics(), tuple)
         self.assertIsInstance(eq.get_number_of_progress_steps(), int)
         self.assertIsInstance(eq.minimum_data_points_for_generation(), int)
+        with self.assertRaises(EnergyPlusPetException):
+            eq.set_required_constant_parameter('SOME_STRING_THAT_DOESNT_EXIST', 0.0)

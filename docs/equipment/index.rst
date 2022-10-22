@@ -12,4 +12,4 @@ Talk about the equipment stuff here.
    equip_types
    manager
    wahp_heating_curve
-   wwhp_heating_curve
+   wahp_cooling_curve

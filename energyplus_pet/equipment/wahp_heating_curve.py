@@ -212,7 +212,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             f"compressor_power_coefficient_{i + 1}": round(c, 4) for i, c in enumerate(self.compressor_power_params)
         }
         epjson_object = {
-            'WAHP:Heating:CurveFit': {
+            'HeatPump:WaterToAir:EquationFit:Heating': {
                 'Your Coil Name': {
                     **base_values_dict, **capacity_coefficient_dict, **power_coefficient_dict
                 }

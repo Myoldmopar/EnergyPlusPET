@@ -199,7 +199,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
 
     root = Tk()
     def b(*_): print("hey")

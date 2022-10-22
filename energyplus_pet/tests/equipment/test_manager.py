@@ -12,9 +12,9 @@ class TestEquipmentFactory(TestCase):
             EquipType.InvalidType: self.assertIsNone,
             EquipType.WAHP_Heating_CurveFit: self.assertIsNotNone,
             EquipType.WAHP_Heating_PE: self.assertIsNone,
-            EquipType.WAHP_Cooling_CurveFit: self.assertIsNone,
+            EquipType.WAHP_Cooling_CurveFit: self.assertIsNotNone,
             EquipType.WAHP_Cooling_PE: self.assertIsNone,
-            EquipType.WWHP_Heating_CurveFit: self.assertIsNotNone,
+            EquipType.WWHP_Heating_CurveFit: self.assertIsNone,
             EquipType.WWHP_Cooling_CurveFit: self.assertIsNone,
             EquipType.Pump_ConstSpeed_ND: self.assertIsNone,
         }

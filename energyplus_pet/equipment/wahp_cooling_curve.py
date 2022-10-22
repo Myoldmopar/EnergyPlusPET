@@ -11,9 +11,8 @@ from energyplus_pet.equipment.column_header import ColumnHeaderArray, ColumnHead
 from energyplus_pet.exceptions import EnergyPlusPetException
 from energyplus_pet.units import UnitType
 
-# TODO: This is all wrong, I accidentally made this a WAHP Cooling!?!?
 
-class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
+class WaterToAirHeatPumpCoolingCurveFit(BaseEquipment):
 
     def __init__(self):
         # need some rated parameters that we get from the user for scaling, reporting, etc.
@@ -35,7 +34,6 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
         self.catalog_load_side_cooling_capacity = []
         self.catalog_load_side_sensible_capacity = []
         self.catalog_compressor_power = []
-        self.catalog_source_side_heat_absorption = []
         # these represent a metric for the quality of the regression
         self.cooling_capacity_average_err_one_sigma = 0.0
         self.sensible_capacity_average_err_one_sigma = 0.0
@@ -55,13 +53,13 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
         self.percent_error_source_side_heat_absorption = []
 
     def this_type(self) -> EquipType:
-        return EquipType.WWHP_Heating_CurveFit
+        return EquipType.WAHP_Cooling_CurveFit
 
     def name(self) -> str:
-        return "Water to Water Heat Pump, Heating Mode, Curve Fit Formulation"
+        return "Water to Air Heat Pump, Cooling Mode, Curve Fit Formulation"
 
     def short_name(self) -> str:
-        return "WWHP-Heating-CurveFit"
+        return "WAHP-Cooling-CurveFit"
 
     def get_required_constant_parameters(self) -> List[BaseEquipment.RequiredConstantParameter]:
         return [
@@ -127,7 +125,6 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
                 ColumnHeader("Load Side Total Capacity", UnitType.Power),
                 ColumnHeader("Load Side Sensible Capacity", UnitType.Power),
                 ColumnHeader("Compressor Power Input", UnitType.Power),
-                ColumnHeader("Source Side Heat Extraction", UnitType.Power),
             ]
         )
 
@@ -148,7 +145,7 @@ class WaterToWaterHeatPumpHeatingCurveFit(BaseEquipment):
         fields.extend(self.sensible_capacity_params)
         fields.extend(self.compressor_power_params)
         fields.append('Your Heat Pump Cycle Time')
-        form = """HeatPump:WaterToWater:EquationFit:Cooling,
+        form = """HeatPump:WaterToAir:EquationFit:Cooling,
 {0},{1}!-Name
 {2},{3}!-Source Side Inlet Node Name
 {4},{5}!-Source Side Outlet Node Name
@@ -237,7 +234,7 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             f"compressor_power_coefficient_{i+1}": round(c, 4) for i, c in enumerate(self.compressor_power_params)
         }
         epjson_object = {
-            'WWHP:Heating:CurveFit': {
+            'HeatPump:WaterToAir:EquationFit:Cooling': {
                 'Your Coil Name': {
                     **base_values_dict,
                     **capacity_coefficient_dict,
@@ -266,7 +263,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         self.catalog_load_side_cooling_capacity = []
         self.catalog_load_side_sensible_capacity = []
         self.catalog_compressor_power = []
-        self.catalog_source_side_heat_absorption = []
         scaled_source_side_inlet_temp = []
         scaled_source_side_flow_rate = []
         scaled_load_side_inlet_temp = []
@@ -283,7 +279,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             self.catalog_load_side_cooling_capacity.append(data_row[4])
             self.catalog_load_side_sensible_capacity.append(data_row[5])
             self.catalog_compressor_power.append(data_row[6])
-            self.catalog_source_side_heat_absorption.append(data_row[4] - data_row[6])
             scaled_source_side_inlet_temp.append((data_row[0] + 273.15) / (10.0 + 273.15))  # T_ref defined by HP model
             scaled_source_side_flow_rate.append(data_row[1] / self.rated_source_volume_flow_rate)
             scaled_load_side_inlet_temp.append((data_row[2] + 273.15) / (10.0 + 273.15))
@@ -424,10 +419,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
                 100.0 * (self.predicted_compressor_power[i] - self.catalog_compressor_power[i]) /
                 self.catalog_compressor_power[i]
             )
-            self.percent_error_source_side_heat_absorption.append(
-                100.0 * (self.predicted_source_side_heat_absorption[i] - self.catalog_source_side_heat_absorption[i]) /
-                self.catalog_source_side_heat_absorption[i]
-            )
         cb_progress_increment()
         cb_progress_done(True)
 
@@ -439,8 +430,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ('Sensible Heat Transfer Catalog Input', 'point', 'red', self.catalog_load_side_sensible_capacity),
             ('Compressor Power Model Output', 'line', 'green', self.predicted_compressor_power),
             ('Compressor Power Catalog Input', 'point', 'green', self.catalog_compressor_power),
-            ('Source Side Heat Absorption Model Output', 'line', 'blue', self.predicted_source_side_heat_absorption),
-            ('Source Side Heat Absorption Catalog Input', 'point', 'blue', self.catalog_source_side_heat_absorption),
         )
 
     def get_error_plot_data(self) -> Tuple:
@@ -448,12 +437,20 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ('Total Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_cooling_capacity),
             ('Sensible Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_sensible_capacity),
             ('Compressor Power % Error', 'line', 'green', self.percent_error_compressor_power),
-            ('Source Side Heat Absorption % Error', 'line', 'blue', self.percent_error_source_side_heat_absorption),
         )
 
-#
-# if __name__ == "__main__":
-#     w = WaterToWaterHeatPumpHeatingCurveFit()
-#     w.rated_compressor_power.value = 100.0
-#     print(w.to_eplus_idf_object())
-#     print(w.to_parameter_summary())
+    def get_extra_regression_metrics(self) -> Tuple:
+        return (
+            (
+                "Total Heat Transfer Average curve-fit error (1 standard deviation)",
+                self.cooling_capacity_average_err_one_sigma
+            ),
+            (
+                "Sensible Heat Transfer Average curve-fit error (1 standard deviation)",
+                self.sensible_capacity_average_err_one_sigma
+            ),
+            (
+                "Compressor Power Average curve-fit error (1 standard deviation)",
+                self.compressor_power_average_err_one_sigma
+            )
+        )

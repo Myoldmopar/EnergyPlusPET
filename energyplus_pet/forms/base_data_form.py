@@ -242,7 +242,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and use the butto
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
 
     root = Tk()
     MainDataForm(root, WaterToWaterHeatPumpHeatingCurveFit())
