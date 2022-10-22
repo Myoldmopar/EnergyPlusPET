@@ -9,11 +9,11 @@ class TestWAHPHeatingCurve(EquipmentTestHelper):
         eq = WaterToAirHeatPumpHeatingCurveFit()
         # initialize the output parameters
         eq.heating_capacity_params = [0] * 5
-        eq.compressor_power_params = [0] * 5
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_rate_key, 10)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_rate_key, 10)
-        eq.set_required_constant_parameter(eq.rated_total_capacity_key, 10)
-        eq.set_required_constant_parameter(eq.rated_compressor_power_key, 1)
+        eq.heating_power_params = [0] * 5
+        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 10)
+        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 10)
+        eq.set_required_constant_parameter(eq.rated_heating_capacity_key, 10)
+        eq.set_required_constant_parameter(eq.rated_heating_power_key, 1)
         self.check_interface(eq, EquipType.WAHP_Heating_CurveFit)
 
     def test_generated_parameters_no_correction_factors(self):
@@ -57,16 +57,16 @@ class TestWAHPHeatingCurve(EquipmentTestHelper):
             [31, 15, 7, 3, 39995.1833215548, 6930.05533568905],
             [32, 16, 8, 4, 41303.8176678445, 7097.20812720848],
         ]
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_rate_key, 50)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_rate_key, 50)
-        eq.set_required_constant_parameter(eq.rated_total_capacity_key, 360)
-        eq.set_required_constant_parameter(eq.rated_compressor_power_key, 60)
+        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 50)
+        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 50)
+        eq.set_required_constant_parameter(eq.rated_heating_capacity_key, 360)
+        eq.set_required_constant_parameter(eq.rated_heating_power_key, 60)
         eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)
         expected = [12.1, 31.2, 34.2, 82.1, 88.1]
         calculated = eq.heating_capacity_params
         [self.assertAlmostEqual(e, c, 1) for e, c in zip(expected, calculated)]
         expected = [8.1, 34.8, 49.5, 73.2, 51.2]
-        calculated = eq.compressor_power_params
+        calculated = eq.heating_power_params
         [self.assertAlmostEqual(e, c, 1) for e, c in zip(expected, calculated)]
 
     def test_output_forms(self):

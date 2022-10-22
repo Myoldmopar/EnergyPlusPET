@@ -82,9 +82,9 @@ if __name__ == "__main__":
     window = Tk()
     cdm = CatalogDataManager()
     eq = WaterToAirHeatPumpHeatingCurveFit()
-    eq.catalog_load_side_heating_capacity = [100.0, 200.0, 300.0]
-    eq.predicted_load_side_heating_capacity = [100.00001, 200.00001, 299.99999]
-    eq.error_load_side_heating_capacity = [0.0000001, 0.00000001, 0.0000001]
-    eq.heating_capacity_average_err_one_sigma = 0.00005
+    eq.catalog_heating_capacity = [100.0, 200.0, 300.0]
+    eq.predicted_heating_capacity = [100.00001, 200.00001, 299.99999]
+    eq.percent_error_heating_capacity = [0.0000001, 0.00000001, 0.0000001]
+    eq.heating_capacity_avg_err = 0.00005
     ComparisonPlot(window, cdm, eq)
     window.mainloop()

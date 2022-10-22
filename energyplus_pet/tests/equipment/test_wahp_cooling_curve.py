@@ -9,11 +9,11 @@ class TestWAHPCoolingCurve(EquipmentTestHelper):
         eq = WaterToAirHeatPumpCoolingCurveFit()
         eq.total_capacity_params = [0] * 5
         eq.sensible_capacity_params = [0] * 5
-        eq.compressor_power_params = [0] * 5
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_rate_key, 10)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_rate_key, 10)
+        eq.cooling_power_params = [0] * 5
+        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 10)
+        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 10)
         eq.set_required_constant_parameter(eq.rated_total_capacity_key, 10)
-        eq.set_required_constant_parameter(eq.rated_compressor_power_key, 1)
+        eq.set_required_constant_parameter(eq.rated_cooling_power_key, 1)
         self.check_interface(eq, EquipType.WAHP_Cooling_CurveFit)
 
     def test_generated_parameters(self):
@@ -53,11 +53,11 @@ class TestWAHPCoolingCurve(EquipmentTestHelper):
             [31, 15, 7, 3, 39995.1833215548, 6930.05533568905, 33065.1279858657],
             [32, 16, 8, 4, 41303.8176678445, 7097.20812720848, 34206.609540636],
         ]
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_rate_key, 50)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_rate_key, 50)
+        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 50)
+        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 50)
         eq.set_required_constant_parameter(eq.rated_total_capacity_key, 360)
         eq.set_required_constant_parameter(eq.rated_sensible_capacity_key, 300)
-        eq.set_required_constant_parameter(eq.rated_compressor_power_key, 60)
+        eq.set_required_constant_parameter(eq.rated_cooling_power_key, 60)
         eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)
         expected = [12.1, 31.2, 34.2, 82.1, 88.1]
         calculated = eq.total_capacity_params
@@ -66,7 +66,7 @@ class TestWAHPCoolingCurve(EquipmentTestHelper):
         calculated = eq.sensible_capacity_params
         [self.assertAlmostEqual(e, c, 1) for e, c in zip(expected, calculated)]
         expected = [64.499, 152.481, 155.782, 419.399, 477.399]
-        calculated = eq.compressor_power_params
+        calculated = eq.cooling_power_params
         [self.assertAlmostEqual(e, c, 1) for e, c in zip(expected, calculated)]
 
     def test_output_forms(self):

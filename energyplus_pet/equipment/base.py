@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 from numpy import sqrt, diag, average
 from scipy.optimize import curve_fit
@@ -191,20 +191,27 @@ class BaseEquipment:
         return ()
 
     @staticmethod
-    def fill_eplus_object_format(fields: List[str], form: str) -> str:
+    def fill_eplus_object_format(object_name: str, fields: List[Tuple]) -> str:
         """
-        This function takes a list of parameters and field names and a preset EnergyPlus IDF object format and processes
+        This function takes a list of (field name, parameter) tuples and processes
         them into a nicely formed EnergyPlus IDF object.
 
-        :param fields: A list of IDF object parameter values and field names
-        :param form: A string format with the right number of {0}, {1], ..., placeholders
+        :param object_name: An IDF object name
+        :param fields: A list of tuples of the form (field name, field value)
         :return: String IDF object
         """
-        # TODO: Might want to pass in field values and field names separately
+        form = object_name + ',\n'
+        field_names = [x[0] for x in fields]
+        field_values = [x[1] for x in fields]
+        for i, fn in enumerate(field_names):
+            if i == len(field_names) - 1:
+                form += "{};{}!-" + fn + '\n'
+            else:
+                form += "{},{}!-" + fn + '\n'
         preferred_spaces = 16
         hanging_indent_string = " "*4
         pads = []
-        string_fields = [str(x) for x in fields]
+        string_fields = [str(x) for x in field_values]
         for f in string_fields:
             this_padding = preferred_spaces - len(f)
             this_padding = max(2, this_padding)
@@ -221,6 +228,27 @@ class BaseEquipment:
             independent_variable_arrays: Tuple[List[float], ...],
             dependent_variable_array: List[float]
     ) -> Tuple[List[float], float]:
+        """
+        Performs a curve fit operation given an evaluation function, a tuple of arrays of independent variable data,
+        and an array of dependent variable values.
+
+        The functional relationship to be solved is: Y = F(X, A), where:
+
+        * Y is the known original dependent data array, such as an array of catalog heat transfer rates.
+        * F is the evaluation function, which can take scalar coefficients & independent variables and calculate a new Y
+        * X represents the independent variable data, which are passed into F as a tuple argument for each data point
+        * A is a set of coefficients to be solved, which are passed to the function as scalar arguments
+
+        :param eval_function: A function that takes a tuple of independent variable scalars and individual coefficient
+                              values as trailing arguments. For example
+                              ``def calc_one_output((one_flow_rate, one_inlet_temp), coeff_a, coeff_b) -> float``
+                              The function should return the output of the curve evaluation.
+        :param independent_variable_arrays: A tuple of arrays of independent variable data, for example
+                                            ``(flow_rates_all_data_points, inlet_temp_all_data_points)``
+        :param dependent_variable_array: A single array of dependent variable data, for example ``all_outputs: [float]``
+        :return: Returns a tuple of two items: first is the actual list of solved parameters, and second is a one-sigma
+                 average regression error which can be displayed to describe to the user just how good the curve fit is.
+        """
         curve_fit_response = curve_fit(
             eval_function,
             independent_variable_arrays,
@@ -238,6 +266,7 @@ class BaseEquipment:
             generated_parameter_array: List[float],
             catalog_output_array: List[float],
     ) -> Tuple[List[float], List[float]]:
+        """Evaluates a given curve function at all data points given"""
         num_points = len(catalog_output_array)
         predicated_values = []
         error_values = []
@@ -251,3 +280,13 @@ class BaseEquipment:
                 catalog_output_array[i]
             )
         return predicated_values, error_values
+
+    @staticmethod
+    def current_eplus_version_object_idf() -> str:
+        """Returns a version IDF object string to include in IDF outputs"""
+        return BaseEquipment.fill_eplus_object_format('Version', [('Version Identifier', 22.2)])
+
+    @staticmethod
+    def current_eplus_version_object_epjson() -> Dict:
+        """Returns a version EpJSON object to include in EpJSON outputs"""
+        return {'Version': {'Version 1': {'version_identifier': 22.2}}}
