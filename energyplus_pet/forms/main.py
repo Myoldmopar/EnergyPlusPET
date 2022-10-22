@@ -139,20 +139,22 @@ class EnergyPlusPetWindow(Tk):
         self._tree.column('#0', stretch=False)
         equip_type_scrollbar.config(command=self._tree.yview)
         # eventually use a defined dictionary somewhere for the tree items and keywords
-        root_hp = self._tree.insert(parent='', index='end', text="Heat Pumps", open=True)
-        branch_wah = self._tree.insert(parent=root_hp, index='end', text="Water to Air Heating", open=True)
+        root_hp = self._tree.insert(parent='', index='end', text="Heat Pump Coils", open=True)
+        branch_wah = self._tree.insert(parent=root_hp, index='end', text="Water to Air Heating Coil", open=True)
         init = self._tree.insert(parent=branch_wah, index='end', text="Curve Fit", tags=ETString.WAHP_Heating_CurveFit)
-        self._tree.insert(parent=branch_wah, index='end', text="Parameter Estimation", tags=ETString.WAHP_Heating_PE)
-        branch_wac = self._tree.insert(parent=root_hp, index='end', text="Water to Air Cooling", open=True)
+        # self._tree.insert(parent=branch_wah, index='end', text="Parameter Estimation", tags=ETString.WAHP_Heating_PE)
+        branch_wac = self._tree.insert(parent=root_hp, index='end', text="Water to Air Cooling Coil", open=True)
         self._tree.insert(parent=branch_wac, index='end', text="Curve Fit", tags=ETString.WAHP_Cooling_CurveFit)
-        self._tree.insert(parent=branch_wac, index='end', text="Parameter Estimation", tags=ETString.WAHP_Cooling_PE)
+        # self._tree.insert(parent=branch_wac, index='end', text="Parameter Estimation", tags=ETString.WAHP_Cooling_PE)
         branch_wwh = self._tree.insert(parent=root_hp, index='end', text="Water to Water Heating", open=True)
         self._tree.insert(parent=branch_wwh, index='end', text="Curve Fit", tags=ETString.WWHP_Heating_CurveFit)
         branch_wwc = self._tree.insert(parent=root_hp, index='end', text="Water to Water Cooling", open=True)
         self._tree.insert(parent=branch_wwc, index='end', text="Curve Fit", tags=ETString.WWHP_Cooling_CurveFit)
-        root_pumps = self._tree.insert(parent='', index='end', text='Pumps', open=True)
-        branch_con_pump = self._tree.insert(parent=root_pumps, index='end', text="Constant Speed Pump", open=True)
-        self._tree.insert(parent=branch_con_pump, index='end', text='Non-Dimensional', tags=ETString.Pump_ConstSpeed_ND)
+        # root_pumps = self._tree.insert(parent='', index='end', text='Pumps', open=True)
+        # branch_con_pump = self._tree.insert(parent=root_pumps, index='end', text="Constant Speed Pump", open=True)
+        # self._tree.insert(
+        #     parent=branch_con_pump, index='end', text='Non-Dimensional', tags=ETString.Pump_ConstSpeed_ND
+        # )
         # COMPONENT_EXTENSION: Add more nodes to the treeview based on the type added
         # TODO: Find all extension spots and number them like in the old codebase
         self._tree.pack(side=LEFT, padx=3, pady=3, fill=BOTH, expand=True)
