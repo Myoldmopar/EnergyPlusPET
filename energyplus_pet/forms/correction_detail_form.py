@@ -10,6 +10,7 @@ from tksheet import Sheet
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.forms.basic_message_form import PetMessageForm
+from energyplus_pet.exceptions import EnergyPlusPetException
 from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue
 
 
@@ -206,7 +207,13 @@ The correction factor requires multiplier values for the following {len(_cf.colu
 
     def conform_units(self):
         current_units_string = self.replacement_units_string.get()
-        current_unit_id = self.unit_type_class.get_id_from_unit_string(current_units_string)
+        try:
+            current_unit_id = self.unit_type_class.get_id_from_unit_string(current_units_string)
+        except EnergyPlusPetException:
+            pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
+            self.wait_window(pmf)
+            self.cancel()
+            return
         for r in range(self.table.total_rows()):
             cell_value = float(self.table.get_cell_data(r, 0))
             unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)

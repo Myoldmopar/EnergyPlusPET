@@ -9,7 +9,9 @@ from typing import List
 from tksheet import Sheet
 
 from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.exceptions import EnergyPlusPetException
 from energyplus_pet.units import unit_class_factory, unit_instance_factory
+from energyplus_pet.forms.basic_message_form import PetMessageForm
 
 
 class MainDataForm(Toplevel):
@@ -196,7 +198,13 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         for c in range(self.table.total_columns()):
             current_units_string = self.table.get_cell_data(0, c)
             if current_units_string != self.columnar_preferred_unit_string[c]:
-                current_unit_id = self.columnar_unit_type_classes[c].get_id_from_unit_string(current_units_string)
+                try:
+                    current_unit_id = self.columnar_unit_type_classes[c].get_id_from_unit_string(current_units_string)
+                except EnergyPlusPetException:
+                    pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
+                    self.wait_window(pmf)
+                    self.cancel()
+                    return
                 for r in range(self.table.total_rows()):
                     if r == 0:
                         self.table.set_cell_data(r, c, self.columnar_preferred_unit_string[c])

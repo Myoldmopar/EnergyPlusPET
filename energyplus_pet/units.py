@@ -62,7 +62,6 @@ class BaseValueWithUnit:
         :param current_units_string: A string of units to search for, such as 'kg/s'
         :return: An internal string ID of the unit matching what comes from get_unit_ids()
         """
-        # TODO: Catch the exception in places that use this
         for k, v in cls.get_unit_string_map().items():
             if v == current_units_string:
                 return k

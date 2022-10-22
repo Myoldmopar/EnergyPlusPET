@@ -4,8 +4,10 @@ from tkinter import TOP, X, RIDGE, BOTH, ALL  # appearance stuff
 from tkinter import StringVar, DoubleVar  # dynamic variables
 from typing import Callable
 
+from energyplus_pet.forms.basic_message_form import PetMessageForm
 from energyplus_pet.units import unit_class_factory, unit_instance_factory
 from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.exceptions import EnergyPlusPetException
 
 
 class ConstantParameterEntryWidget(Frame):
@@ -62,7 +64,13 @@ class ConstantParameterEntryWidget(Frame):
         :return: Nothing
         """
         current_units_string = self.var_units_string.get()
-        current_unit_id = self._unit_type_class.get_id_from_unit_string(current_units_string)
+        try:
+            current_unit_id = self._unit_type_class.get_id_from_unit_string(current_units_string)
+        except EnergyPlusPetException:
+            pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
+            self.wait_window(pmf)
+            self.units_conformed = False
+            return
         current_value = self.var_value.get()
         unit_value = unit_instance_factory(current_value, self._unit_type)
         unit_value.units = current_unit_id
