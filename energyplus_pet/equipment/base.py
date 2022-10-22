@@ -1,6 +1,9 @@
 from abc import abstractmethod
 from typing import Callable, List, Tuple
 
+from numpy import sqrt, diag, average
+from scipy.optimize import curve_fit
+
 from energyplus_pet.equipment.equip_types import EquipType
 from energyplus_pet.equipment.column_header import ColumnHeaderArray
 from energyplus_pet.units import UnitType
@@ -211,3 +214,40 @@ class BaseEquipment:
             all_tokens.append(hanging_indent_string + f)
             all_tokens.append(p)
         return form.format(*all_tokens)
+
+    @staticmethod
+    def do_one_curve_fit(
+            eval_function: Callable,
+            independent_variable_arrays: Tuple[List[float], ...],
+            dependent_variable_array: List[float]
+    ) -> Tuple[List[float], float]:
+        curve_fit_response = curve_fit(
+            eval_function,
+            independent_variable_arrays,
+            dependent_variable_array
+        )
+        cooling_capacity_params = curve_fit_response[0]
+        calculated_parameters = list(cooling_capacity_params)
+        average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
+        return calculated_parameters, average_err_one_sigma
+
+    @staticmethod
+    def eval_curve_at_points(
+            eval_function: Callable,
+            independent_variable_arrays: Tuple[List[float], ...],
+            generated_parameter_array: List[float],
+            catalog_output_array: List[float],
+    ) -> Tuple[List[float], List[float]]:
+        num_points = len(catalog_output_array)
+        predicated_values = []
+        error_values = []
+        for i in range(num_points):
+            predicated_values.append(eval_function(
+                [x[i] for x in independent_variable_arrays],
+                *generated_parameter_array
+            ))
+            error_values.append(
+                100.0 * (predicated_values[i] - catalog_output_array[i]) /
+                catalog_output_array[i]
+            )
+        return predicated_values, error_values

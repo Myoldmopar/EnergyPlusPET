@@ -11,5 +11,6 @@ Talk about the equipment stuff here.
    column_header
    equip_types
    manager
+   common_curves
    wahp_heating_curve
    wahp_cooling_curve

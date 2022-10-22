@@ -1,9 +1,7 @@
 from json import dumps
 from typing import Callable, List, Tuple
 
-from numpy import sqrt, diag, average
-from scipy.optimize import curve_fit
-
+from energyplus_pet.equipment.common_curves import CommonCurves
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.equipment.equip_types import EquipType
@@ -54,8 +52,8 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         self.predicted_load_side_heating_capacity = []
         self.predicted_compressor_power = []
         self.predicted_source_side_heat_absorption = []
-        self.percent_error_load_side_heating_capacity = []
-        self.percent_error_compressor_power = []
+        self.error_load_side_heating_capacity = []
+        self.error_compressor_power = []
         self.percent_error_source_side_heat_absorption = []
 
     def this_type(self) -> EquipType:
@@ -239,7 +237,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
         self.catalog_load_side_volume_flow_rate = []
         self.catalog_load_side_heating_capacity = []
         self.catalog_compressor_power = []
-        self.catalog_source_side_heat_absorption = []
         scaled_source_side_inlet_temp = []
         scaled_source_side_flow_rate = []
         scaled_load_side_inlet_temp = []
@@ -254,7 +251,6 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             self.catalog_load_side_volume_flow_rate.append(data_row[3])
             self.catalog_load_side_heating_capacity.append(data_row[4])
             self.catalog_compressor_power.append(data_row[5])
-            self.catalog_source_side_heat_absorption.append(data_row[4] - data_row[5])
             scaled_source_side_inlet_temp.append((data_row[0] + 273.15) / (10.0 + 273.15))  # T_ref defined by HP model
             scaled_source_side_flow_rate.append(data_row[1] / self.rated_source_volume_flow_rate)
             scaled_load_side_inlet_temp.append((data_row[2] + 273.15) / (10.0 + 273.15))
@@ -264,104 +260,41 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ones.append(1.0)
         cb_progress_increment()
 
-        def evaluate_expression(x, a, b, c, d, e):
-            """
-            Evaluates:  Y / Y_rated = A*(1.0) + B*(TLI/TLI_R) + C*(TSI/TSI_R) + D*(VLI/VLI_R) + E*(VSI/VSI_R)
-            Where Y would represent any of the desired dependent variables, such as Q or Power
+        independent_var_arrays = (
+            ones,
+            scaled_load_side_inlet_temp,
+            scaled_source_side_inlet_temp,
+            scaled_load_side_flow_rate,
+            scaled_source_side_flow_rate
+        )
 
-            :param x: tuple of independent variables, (1.0, TLI/TLI_R, TSI/TSI_R, VLI/VLI_R, VSI/VSI_R)
-            :param a: coefficient A in the above equation
-            :param b: coefficient B in the above equation
-            :param c: coefficient C in the above equation
-            :param d: coefficient D in the above equation
-            :param e: coefficient E in the above equation
-            :return: Scaled dependent variable, such as Q/Q_rated
-            """
-            return a * x[0] + b * x[1] + c * x[2] + d * x[3] + e * x[4]
-
-        curve_fit_response = curve_fit(
-            evaluate_expression,
-            (
-                ones,
-                scaled_load_side_inlet_temp,
-                scaled_source_side_inlet_temp,
-                scaled_load_side_flow_rate,
-                scaled_source_side_flow_rate
-            ),
+        self.heating_capacity_params, self.heating_capacity_average_err_one_sigma = self.do_one_curve_fit(
+            CommonCurves.heat_pump_5_coefficient_curve,
+            independent_var_arrays,
             scaled_heating_capacity
         )
-        heating_capacity_params = curve_fit_response[0]
-        self.heating_capacity_average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
-        self.heating_capacity_params = list(heating_capacity_params)
-        cb_progress_increment()
-        curve_fit_response = curve_fit(
-            evaluate_expression,
-            (
-                ones,
-                scaled_load_side_inlet_temp,
-                scaled_source_side_inlet_temp,
-                scaled_load_side_flow_rate,
-                scaled_source_side_flow_rate
-            ),
-            scaled_compressor_power
-        )
-        compressor_power_params = curve_fit_response[0]
-        self.compressor_power_average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
-        self.compressor_power_params = list(compressor_power_params)
         cb_progress_increment()
 
-        # should be empty, but just reset to be sure
-        self.predicted_load_side_heating_capacity = []
-        self.predicted_compressor_power = []
-        self.predicted_source_side_heat_absorption = []
-        self.percent_error_load_side_heating_capacity = []
-        self.percent_error_compressor_power = []
-        self.percent_error_source_side_heat_absorption = []
-        for i in range(len(data_manager.final_data_matrix)):
-            self.predicted_load_side_heating_capacity.append(self.rated_total_capacity * evaluate_expression(
-                (
-                    ones[i],
-                    scaled_load_side_inlet_temp[i],
-                    scaled_source_side_inlet_temp[i],
-                    scaled_load_side_flow_rate[i],
-                    scaled_source_side_flow_rate[i]
-                ),
-                heating_capacity_params[0],
-                heating_capacity_params[1],
-                heating_capacity_params[2],
-                heating_capacity_params[3],
-                heating_capacity_params[4]
-            ))
-            self.predicted_compressor_power.append(self.rated_compressor_power * evaluate_expression(
-                (
-                    ones[i],
-                    scaled_load_side_inlet_temp[i],
-                    scaled_source_side_inlet_temp[i],
-                    scaled_load_side_flow_rate[i],
-                    scaled_source_side_flow_rate[i]
-                ),
-                compressor_power_params[0],
-                compressor_power_params[1],
-                compressor_power_params[2],
-                compressor_power_params[3],
-                compressor_power_params[4]
-            ))
-            self.predicted_source_side_heat_absorption.append(
-                self.predicted_load_side_heating_capacity[i] - self.predicted_compressor_power[i]
-            )
-            self.percent_error_load_side_heating_capacity.append(
-                100.0 * (self.predicted_load_side_heating_capacity[i] - self.catalog_load_side_heating_capacity[i]) /
-                self.catalog_load_side_heating_capacity[i]
-            )
-            self.percent_error_compressor_power.append(
-                100.0 * (self.predicted_compressor_power[i] - self.catalog_compressor_power[i]) /
-                self.catalog_compressor_power[i]
-            )
-            self.percent_error_source_side_heat_absorption.append(
-                100.0 * (self.predicted_source_side_heat_absorption[i] - self.catalog_source_side_heat_absorption[i]) /
-                self.catalog_source_side_heat_absorption[i]
-            )
+        self.compressor_power_params, self.compressor_power_average_err_one_sigma = self.do_one_curve_fit(
+            CommonCurves.heat_pump_5_coefficient_curve,
+            independent_var_arrays,
+            scaled_compressor_power
+        )
         cb_progress_increment()
+
+        # now just recalculate the values at each catalog data point
+        self.predicted_load_side_heating_capacity, self.error_load_side_heating_capacity = self.eval_curve_at_points(
+            lambda *x: CommonCurves.heat_pump_5_coefficient_curve_raw_value(*x, self.rated_total_capacity),
+            independent_var_arrays,
+            self.heating_capacity_params,
+            self.catalog_load_side_heating_capacity
+        )
+        self.predicted_compressor_power, self.error_compressor_power = self.eval_curve_at_points(
+            lambda *x: CommonCurves.heat_pump_5_coefficient_curve_raw_value(*x, self.rated_compressor_power),
+            independent_var_arrays,
+            self.compressor_power_params,
+            self.catalog_compressor_power
+        )
         cb_progress_done(True)
 
     def get_absolute_plot_data(self) -> Tuple:
@@ -370,15 +303,12 @@ Rated Source-side Volumetric Flow Rate: {self.rated_source_volume_flow_rate}
             ('Total Heat Transfer Catalog Input', 'point', 'red', self.catalog_load_side_heating_capacity),
             ('Compressor Power Model Output', 'line', 'green', self.predicted_compressor_power),
             ('Compressor Power Catalog Input', 'point', 'green', self.catalog_compressor_power),
-            ('Source Side Heat Absorption Model Output', 'line', 'blue', self.predicted_source_side_heat_absorption),
-            ('Source Side Heat Absorption Catalog Input', 'point', 'blue', self.catalog_source_side_heat_absorption),
         )
 
     def get_error_plot_data(self) -> Tuple:
         return (
-            ('Total Heat Transfer % Error', 'line', 'red', self.percent_error_load_side_heating_capacity),
-            ('Compressor Power % Error', 'line', 'green', self.percent_error_compressor_power),
-            ('Source Side Heat Absorption % Error', 'line', 'blue', self.percent_error_source_side_heat_absorption),
+            ('Total Heat Transfer % Error', 'line', 'red', self.error_load_side_heating_capacity),
+            ('Compressor Power % Error', 'line', 'green', self.error_compressor_power),
         )
 
     def get_extra_regression_metrics(self) -> Tuple:
