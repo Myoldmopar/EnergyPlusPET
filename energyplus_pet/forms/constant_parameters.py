@@ -45,9 +45,9 @@ class ConstantParameterEntryWidget(Frame):
         self.var_value = DoubleVar(value=rp.default_value)
         Entry(self, textvariable=self.var_value).grid(row=0, column=1, padx=p, pady=p)
         self.var_units_string = StringVar(value=self._preferred_unit_string)
-        OptionMenu(self, self.var_units_string, *unit_strings, command=self._units_changed).grid(
-            row=1, column=1, padx=p, pady=p
-        )
+        o = OptionMenu(self, self.var_units_string, *unit_strings, command=self._units_changed)
+        o.config(takefocus=1)
+        o.grid(row=1, column=1, padx=p, pady=p)
         self.grid_columnconfigure(ALL, weight=1)
         self.grid_rowconfigure(ALL, weight=1)
         self.units_conformed = True
@@ -152,11 +152,11 @@ class ConstantParameterEntryForm(Toplevel):
     #     ErrorSignal.SetError(txt, "")
     # End Sub
 
-#
-# if __name__ == "__main__":
-#     from tkinter import Tk
-#     from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
-#     tk = Tk()
-#     e = WaterToWaterHeatPumpHeatingCurveFit()
-#     f = ConstantParameterEntryForm(tk, e)
-#     tk.mainloop()
+
+if __name__ == "__main__":
+    from tkinter import Tk
+    from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
+    tk = Tk()
+    e = WaterToAirHeatPumpHeatingCurveFit()
+    f = ConstantParameterEntryForm(tk, e)
+    tk.mainloop()
