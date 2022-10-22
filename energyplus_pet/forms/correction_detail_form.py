@@ -9,6 +9,7 @@ from tksheet import Sheet
 
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
 from energyplus_pet.equipment.base import BaseEquipment
+from energyplus_pet.forms.basic_message_form import PetMessageForm
 from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue
 
 
@@ -25,7 +26,7 @@ class DetailedCorrectionFactorForm(Toplevel):
         p = 4
         self.completed_factor = _cf
         self.equipment_instance = eq
-        self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
+        self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel
         self.need_to_conform_units = False
         # create all the objects
         self.title(f"{parent_window.title()}: Enter Correction Factor Data {cf_num}/{num_cfs}")
@@ -89,14 +90,13 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
         self.tabular_frame = Frame(self)
-        # TODO: The table shouldn't allow resizing, right?
         # TODO: Does db/wb get two independent value columns?
         column_titles = [eq.headers().name_array()[_cf.base_column_index]]
         for mod_column in _cf.columns_to_modify:
             column_titles.append(eq.headers().name_array()[mod_column])
         # TODO: should the following be +2 for db/wb replacement?
         self.table = Sheet(self.tabular_frame)
-        pretend_data = []  # TODO: Make sure num_corrections is updated if table size changes
+        pretend_data = []
         for row in range(_cf.num_corrections):
             this_row = []
             for col in range(len(_cf.columns_to_modify) + 1):
@@ -114,6 +114,11 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         # self.table.extra_bindings("end_paste", func=self.cells_pasted)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         self.tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
+        # we block resizing the table when pasting, and we are hiding the row titles to block inserting rows there,
+        # but we can't seem to block tksheet from allowing a column insert, so we will just have to check later
+        # https://github.com/ragardner/tksheet/blob/0ed6ee8611a7062eedfe43333e7760e1f22088af/tksheet/_tksheet_main_table.py#L3172
+        # store the expected number of columns and if it doesn't match later just make the user fix it
+        self.expected_num_columns: int = self.table.total_columns()
         #
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
@@ -153,11 +158,30 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         if self.need_to_conform_units:
             self.conform_units()
         else:
+            if self.expected_num_columns != self.table.total_columns():
+                message_window = PetMessageForm(
+                    self,
+                    "Problem with Table Size",
+                    "It appears the table column size does not match the expected size, this is odd, cancel and retry",
+                    justify_message_left=True
+                )
+                self.wait_window(message_window)
+                return
+            for r in range(self.table.total_rows()):
+                for c in range(self.table.total_columns()):
+                    value = self.table.get_cell_data(r, c)
+                    if value == '':
+                        message_window = PetMessageForm(
+                            self,
+                            "Problem with Correction Factor Data",
+                            "Encountered at least one blank cell in the data, populate the full table and retry"
+                        )
+                        self.wait_window(message_window)
+                        return
             # OK, so if we are done, units must be ready, so we just need to update the data in the correction factor
-            self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
             # read the first column of data into the base correction of the CF
             self.completed_factor.base_correction = [
-                float(self.table.get_cell_data(row, 0)) for row in range(self.table.total_rows())
+                float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
             ]
             # then iterate over the mod column ids of the CF and read the data into lists and then into the CF map
             for col_num, equipment_column_index in enumerate(self.completed_factor.columns_to_modify):
@@ -165,6 +189,18 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 for row in range(self.table.total_rows()):
                     this_column.append(float(self.table.get_cell_data(row, col_num)))
                 self.completed_factor.mod_correction_data_column_map[equipment_column_index] = this_column
+            output_message = ""
+            if not self.completed_factor.check_ok():
+                output_message += f"Errors for {self.completed_factor.name}:\n"
+                for e in self.completed_factor.check_ok_messages:
+                    output_message += f" - {e}\n"
+            if output_message:
+                message_window = PetMessageForm(
+                    self, "Problem with Correction Factor", output_message, justify_message_left=True
+                )
+                self.wait_window(message_window)
+                return
+            self.exit_code = DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Done
             self.grab_release()
             self.destroy()
 

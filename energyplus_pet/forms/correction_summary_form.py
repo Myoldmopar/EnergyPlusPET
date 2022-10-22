@@ -10,6 +10,7 @@ from typing import List
 
 from energyplus_pet.correction_factor import CorrectionFactor
 from energyplus_pet.forms.correction_summary_widget import CorrectionSummaryWidget
+from energyplus_pet.forms.basic_message_form import PetMessageForm
 from energyplus_pet.equipment.base import BaseEquipment
 
 
@@ -38,7 +39,7 @@ class CorrectionFactorSummaryForm(Toplevel):
         self._summary_widgets: List[CorrectionSummaryWidget] = []
         self.factor_summaries: List[CorrectionFactor] = []
         self._equipment = equipment
-        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Error  # initialize with this value
+        self.exit_code = CorrectionFactorSummaryForm.ExitCode.Cancel  # initialize with this value
         self._text_done = 'Done, ready for factor details'
         self._text_skip = 'Skip entering factors'
         # create the gui
@@ -161,6 +162,18 @@ If you have any correction factors, add them here, otherwise, press done to cont
 
     def _done_skip(self):
         self.exit_code = CorrectionFactorSummaryForm.ExitCode.Done
+        output_message = ""
+        for x in self._summary_widgets:
+            if not x.check_ok():
+                output_message += f"Errors for {x.cf.name}:\n"
+                for e in x.cf.check_ok_messages:
+                    output_message += f" - {e}\n"
+        if output_message:
+            message_window = PetMessageForm(
+                self, "Problem with Correction Factor(s)", output_message, justify_message_left=True
+            )
+            self.wait_window(message_window)
+            return
         self.factor_summaries = [x.cf for x in self._summary_widgets]
         self.grab_release()
         self.destroy()

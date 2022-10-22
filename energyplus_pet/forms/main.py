@@ -328,7 +328,7 @@ class EnergyPlusPetWindow(Tk):
         # if that was successful, loop over each local summary and open individual correction entry forms for each
         for cf_num, cf in enumerate(cdf.factor_summaries):
             cfd_form = DetailedCorrectionFactorForm(
-                self, cf, self._equip_instance, cf_num, len(cdf.factor_summaries)
+                self, cf, self._equip_instance, cf_num + 1, len(cdf.factor_summaries)
             )
             self.wait_window(cfd_form)
             if cfd_form.exit_code == DetailedCorrectionFactorForm.DetailedCorrectionExitCode.Cancel:

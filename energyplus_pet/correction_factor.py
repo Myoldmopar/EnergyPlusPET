@@ -25,8 +25,8 @@ class CorrectionFactor:
         the user, the data is set here.
         :param name:
         """
-        self.name = name
-        self.check_ok_last_message = ""
+        self.name: str = name
+        self.check_ok_messages: List[str] = []
 
         # Once we start supporting the wb/db replacement, we'll need to check from the equipment instance
         # to see if it should be offered for this catalog data.  Then we'll need to track whether the user
@@ -67,32 +67,50 @@ class CorrectionFactor:
 * Mod Correction Matrix:
 {dumps(self.mod_correction_data_column_map, indent=2)}"""
 
-    def check_ok(self) -> bool:
+    def check_ok(self, summary_only: bool = False) -> bool:
         """
         Checks values of this correction factor and returns True or False to indicate success.
         If False, the client can check the .check_ok_last_message for a string message about what is wrong
 
+        :param summary_only: If this is True, it will only check summary data, not the full data set
         :return: True if everything looks good, False if not
         """
-        self.check_ok_last_message = ''
+        self.check_ok_messages.clear()
         if self.num_corrections < 1:
-            self.check_ok_last_message += f"# of corrections ({self.num_corrections}) is less than 1, this is invalid. "
+            self.check_ok_messages.append(
+                f"# of corrections ({self.num_corrections}) is less than 1, this is invalid."
+            )
         if self.correction_type not in [CorrectionFactorType.Multiplier, CorrectionFactorType.Replacement]:
-            self.check_ok_last_message += f"Correction factor type appears invalid: ({self.correction_type}). "
+            self.check_ok_messages.append(
+                f"Correction factor type appears invalid: ({self.correction_type})."
+            )
         if self.base_column_index < 0:
-            self.check_ok_last_message += f"Base column index ({self.base_correction}) is less than 0, invalid. "
+            self.check_ok_messages.append(
+                f"Base column index ({self.base_correction}) is less than 0, invalid."
+            )
         if self.base_column_index in self._columns_to_modify:
-            self.check_ok_last_message += "Base column index appears in modification column list, invalid. "
-        if len(self.base_correction) != self.num_corrections:
-            self.check_ok_last_message += 'Size of base corrections does not match num_corrections, invalid. '
-        if len(self.mod_correction_data_column_map) != len(self._columns_to_modify):
-            self.check_ok_last_message += 'Size of mod correction data does not match columns_to_modify, invalid. '
-        for c in self._columns_to_modify:
-            if c not in self.mod_correction_data_column_map:
-                self.check_ok_last_message += f"Did not find mod column {c} in mod data map keys. "
-            elif len(self.mod_correction_data_column_map[c]) != self.num_corrections:
-                self.check_ok_last_message += f"Size of column {c} data array in mode data map does not match " \
-                                              f"num_corrections = {self.num_corrections}, invalid. "
-        if self.check_ok_last_message:  # the message has content, must be a problem
+            self.check_ok_messages.append(
+                "Base column index appears in modification column list, invalid."
+            )
+        if not summary_only:
+            if len(self.base_correction) != self.num_corrections:
+                self.check_ok_messages.append(
+                    'Size of base corrections does not match num_corrections, invalid.'
+                )
+            if len(self.mod_correction_data_column_map) != len(self._columns_to_modify):
+                self.check_ok_messages.append(
+                    'Size of mod correction data does not match columns_to_modify, invalid.'
+                )
+            for c in self._columns_to_modify:
+                if c not in self.mod_correction_data_column_map:
+                    self.check_ok_messages.append(
+                        f"Did not find mod column {c} in mod data map keys."
+                    )
+                elif len(self.mod_correction_data_column_map[c]) != self.num_corrections:
+                    self.check_ok_messages.append(
+                        f"Size of column {c} data array in mode data map does not match num_corrections = "
+                        f"{self.num_corrections}, invalid. "
+                    )
+        if self.check_ok_messages:  # the message has content, must be a problem
             return False
         return True

@@ -112,5 +112,9 @@ class CorrectionSummaryWidget(LabelFrame):
         self.remove_me = True
         self.remove_callback()
 
+    def check_ok(self) -> bool:
+        """Checks the underlying correction factor for validity"""
+        return self.cf.check_ok(summary_only=True)
+
     def description(self):
         return f"CorrectionFactor {self.equip_instance.name}; {self.cf.num_corrections} corrections"

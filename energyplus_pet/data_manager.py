@@ -56,7 +56,6 @@ class CatalogDataManager:
         :return: A ProcessResult enum instance for the success of the process.  If ERROR, then there is a
                  ``last_error_message`` member variable with an explanation of what went wrong.
         """
-        # TODO: Add a check() method on the correction factor to validate all the array and index lengths
         self.data_processed = True
         self.final_data_matrix = self.base_data
         for cf in self.correction_factors:

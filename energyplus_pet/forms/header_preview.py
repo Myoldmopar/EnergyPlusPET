@@ -18,7 +18,7 @@ class RequiredDataPreviewForm(Toplevel):
         Label(self, text="Data columns listed here\nData can be entered in any common units").pack(
             side=TOP, fill=X, expand=False, padx=3, pady=3
         )
-        Label(self, text=self.summary).pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
+        Label(self, text=self.summary).pack(side=TOP, fill=X, expand=True, padx=3, pady=3)
         Label(
             self,
             text="If any data uses correction factors,\n the constant values are entered in tabular form \n and "
