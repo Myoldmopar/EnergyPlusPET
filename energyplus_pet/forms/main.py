@@ -71,14 +71,17 @@ class EnergyPlusPetWindow(Tk):
         mod_control = 0x4
         # mod_alt = 0x20000
         if event.keysym == 'e' and mod_control & event.state:
-            print("Hit Ctrl-e")
-            self._engage()
+            if self._button_engage['state'] != DISABLED:
+                self._engage()
         elif event.keysym == 'r' and mod_control & event.state:
-            print("Hit Ctrl-r")
-            self._preview_data()
+            if self._button_preview['state'] != DISABLED:
+                self._preview_data()
         elif event.keysym == 't' and mod_control & event.state:
-            print("Hit Ctrl-t")
-            self._catalog_data_wizard()
+            if self._button_catalog['state'] != DISABLED:
+                self._catalog_data_wizard()
+        elif event.keysym == 's' and mod_control & event.state:
+            if self._button_save_data['state'] != DISABLED:
+                self._save_data_to_file()
 
     def _check_queue(self):
         """Checks the GUI queue for actions and sets a timer to check again each time"""
@@ -181,21 +184,28 @@ class EnergyPlusPetWindow(Tk):
 
     def _build_controls(self, container):
         """Builds out the control section in the middle of the window"""
-        Label(container, text="Select an equipment type in the tree\nand press Ctrl-e or click here:")
+        Label(
+            container, text="Select an equipment type in the tree\nand press Ctrl-e or click here:"
+        ).pack(side=TOP, padx=3, pady=3)
         self._button_engage = Button(container, text='Engage Equipment Type', command=self._engage)
         self._button_engage.pack(side=TOP, padx=3, pady=3, fill=X)
         Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
-        Label(container, text="To view the required data for the selected\nequipment, press Ctrl-r or click here:")
+        Label(
+            container, text="To view the required data for the selected\nequipment, press Ctrl-r or click here:"
+        ).pack(side=TOP, padx=3, pady=3)
         self._button_preview = Button(container, text="Required Data Description", command=self._preview_data)
         self._button_preview.pack(side=TOP, padx=3, pady=3, fill=X)
         Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
-        Label(container, text="Finally, to enter data and process parameters\n press Ctrl-t or click here:")
+        Label(
+            container, text="Finally, to enter data and process parameters\n press Ctrl-t or click here..."
+        ).pack(side=TOP, padx=3, pady=3)
         self._button_catalog = Button(container, text="Catalog Data Wizard", command=self._catalog_data_wizard)
         self._button_catalog.pack(side=TOP, padx=3, pady=3, fill=X)
-        Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
+        Label(container, text="...and watch the progress here:").pack(side=TOP, padx=3, pady=3)
         self._progress = Progressbar(container, variable=self._tk_var_progress)
         self._progress.pack(side=TOP, padx=3, pady=3, fill=X)
         Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
+        Label(container, text="Once complete, use Ctrl-s to save data:").pack(side=TOP, padx=3, pady=3)
         self._button_save_data = Button(
             container, text="Save Output to File", command=self._save_data_to_file, state="disabled",
         )
