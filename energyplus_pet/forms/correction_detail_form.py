@@ -117,6 +117,8 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
         self.table.extra_bindings("end_paste", func=self._cells_pasted)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
+        self.table.select_cell(row=0, column=0)
+        self.table.focus()
         self.tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
         # we block resizing the table when pasting, and we are hiding the row titles to block inserting rows via title,
         # but we can't seem to block tksheet from allowing a column insert, so we will just have to check later

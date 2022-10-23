@@ -92,13 +92,16 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.headers(column_titles)
         self.table.set_sheet_data(pretend_data)
         self.table.enable_bindings()
-        self.table.set_options(expand_sheet_if_paste_too_big=True)
+        self.table.set_options(expand_sheet_if_paste_too_big=True, paste_insert_column_limit=0)
         self.table.hide(canvas="row_index")
         self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
         self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
         self.table.extra_bindings("end_paste", func=self._cells_pasted)
+        # TODO: Handle undo here
+        self.table.select_cell(row=1, column=0)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
+        self.table.focus()
         self.expected_num_columns = self.table.total_columns()  # save this to verify later
         tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
         Label(
@@ -113,11 +116,18 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
         bottom_button_frame = Frame(self)
+        table_ops_label_frame = LabelFrame(bottom_button_frame, text="Table Operations")
         Button(
-            bottom_button_frame, text="Add More Table Rows", command=self._add_more_table_rows
+            table_ops_label_frame, text="Add Table Rows", command=self._add_more_table_rows
         ).grid(
             row=0, column=0, padx=p, pady=p
         )
+        Button(
+            table_ops_label_frame, text="Shrink Table to Data", command=self._shrink_table_to_data
+        ).grid(
+            row=0, column=1, padx=p, pady=p
+        )
+        table_ops_label_frame.grid(row=0, column=0, padx=p, pady=p)
         # Button(
         #     bottom_button_frame, text="Repair Data Column Order", state=DISABLED, command=self._repair
         # ).grid(
@@ -134,16 +144,18 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         ).grid(
             row=0, column=1, padx=p, pady=p
         )
-        quick_convert_label_frame.grid(row=0, column=2, padx=p, pady=p)
+        quick_convert_label_frame.grid(row=0, column=1, padx=p, pady=p)
+        workflow_control_label_frame = LabelFrame(bottom_button_frame, text="Primary Controls")
         self.done_conform_text = StringVar(value="Done, Continue")
         Button(
-            bottom_button_frame, textvariable=self.done_conform_text, command=self._done_or_conform
+            workflow_control_label_frame, textvariable=self.done_conform_text, command=self._done_or_conform
         ).grid(
             row=0, column=3, padx=p, pady=p
         )
         Button(
-            bottom_button_frame, text="Cancel Wizard", command=self.cancel
+            workflow_control_label_frame, text="Cancel Wizard", command=self.cancel
         ).grid(row=0, column=4, padx=p, pady=p)
+        workflow_control_label_frame.grid(row=0, column=2, padx=p, pady=p)
         bottom_button_frame.grid_columnconfigure(ALL, weight=1)
         bottom_button_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
@@ -216,6 +228,23 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
 
     def _add_more_table_rows(self):
         self.table.insert_rows(rows=10, redraw=True)
+
+    def _shrink_table_to_data(self):
+        minimum_rows = self.equipment_instance.minimum_data_points_for_generation() + 1
+        # first find the extents of the data
+        current_visible_rows = self.table.total_rows()
+        max_row_index_found = 0
+        for row in range(current_visible_rows):
+            for col in range(self.table.total_columns()):
+                if self.table.get_cell_data(row, col) != '':
+                    max_row_index_found = max(max_row_index_found, row)
+        # constrain it to the minimums
+        desired_row_count = max(max_row_index_found, minimum_rows)
+        # if table is larger than desired, start at the end and remove until we get to the desired value
+        if current_visible_rows > desired_row_count:
+            for r in range(current_visible_rows - 1, desired_row_count, -1):
+                self.table.delete_row(r)
+        self.table.redraw()
 
     def any_blank_cells(self):
         for row in range(self.table.total_rows()):

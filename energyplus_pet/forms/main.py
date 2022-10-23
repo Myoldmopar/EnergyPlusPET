@@ -160,7 +160,9 @@ class EnergyPlusPetWindow(Tk):
         # eventually use a defined dictionary somewhere for the tree items and keywords
         root_hp = self._tree.insert(parent='', index='end', text="Heat Pump Coils", open=True)
         branch_wah = self._tree.insert(parent=root_hp, index='end', text="Water to Air Heating Coil", open=True)
-        init = self._tree.insert(parent=branch_wah, index='end', text="Curve Fit", tags=ETString.WAHP_Heating_CurveFit)
+        self.init = self._tree.insert(
+            parent=branch_wah, index='end', text="Curve Fit", tags=ETString.WAHP_Heating_CurveFit
+        )
         # self._tree.insert(parent=branch_wah, index='end', text="Parameter Estimation", tags=ETString.WAHP_Heating_PE)
         branch_wac = self._tree.insert(parent=root_hp, index='end', text="Water to Air Cooling Coil", open=True)
         self._tree.insert(parent=branch_wac, index='end', text="Curve Fit", tags=ETString.WAHP_Cooling_CurveFit)
@@ -178,8 +180,8 @@ class EnergyPlusPetWindow(Tk):
         # TODO: Find all extension spots and number them like in the old codebase
         self._tree.pack(side=LEFT, padx=3, pady=3, fill=BOTH, expand=True)
         equip_type_scrollbar.pack(side=RIGHT, padx=0, pady=3, fill=Y, expand=False)
-        self._tree.focus(init)
-        self._tree.selection_set(init)
+        self._tree.focus(self.init)
+        self._tree.selection_set(self.init)
         tree_holder.pack(side=TOP, fill=BOTH, expand=True)
 
     def _build_controls(self, container):
@@ -209,7 +211,11 @@ class EnergyPlusPetWindow(Tk):
         self._button_save_data = Button(
             container, text="Save Output to File", command=self._save_data_to_file, state="disabled",
         )
-        self._button_save_data.pack(side=TOP, padx=3, pady=3)
+        self._button_save_data.pack(side=TOP, fill=X, padx=3, pady=3)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
+        Label(container, text="Then if you want to run another, just reinitialize here:").pack(
+            side=TOP, padx=3, pady=3)
+        Button(container, text="Reinitialize Form", command=self._reinitialize).pack(side=TOP, fill=X, padx=3, pady=3)
 
     @staticmethod
     def _build_one_output_frame(notebook_container: Notebook, tab_title: str):
@@ -286,6 +292,15 @@ class EnergyPlusPetWindow(Tk):
                 f.write('hello,world')
         except Exception as e:  # noqa  any file issue could happen
             messagebox.showerror(self._program_name, "Could not save data to file")
+
+    def _reinitialize(self):
+        self._update_all_output_boxes('Messages and results will appear here')
+        self._equip_instance = None
+        self._catalog_data_manager.reset()
+        self._tk_var_progress.set(0)
+        self._tree.focus(self.init)
+        self._tree.selection_set(self.init)
+        self._refresh_gui_state()
 
     def _engage(self) -> None:
         """
@@ -524,7 +539,7 @@ class EnergyPlusPetWindow(Tk):
         :param err_message: Optional error message in case something went wrong
         :return: Nothing
         """
-        self._thread_running = True
+        self._thread_running = False
         self._refresh_gui_state()
         self._update_status_bar('Finished Parameter Generation')
         if success:
