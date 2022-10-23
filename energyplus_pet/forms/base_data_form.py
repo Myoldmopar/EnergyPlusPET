@@ -86,8 +86,9 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                     )
             else:
                 for col in range(len(column_units)):
-                    this_row.append(row * col)
+                    this_row.append(0.0)
             pretend_data.append(this_row)
+        self._num_bad_cells = 0
         self.table.headers(column_titles)
         self.table.set_sheet_data(pretend_data)
         self.table.enable_bindings()
@@ -95,15 +96,11 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.hide(canvas="row_index")
         self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
+        self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
+        self.table.extra_bindings("end_paste", func=self._cells_pasted)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         self.expected_num_columns = self.table.total_columns()  # save this to verify later
         tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
-        # https://github.com/ragardner/tksheet/blob/master/DOCUMENTATION.md#25-example-custom-right-click-and-text-editor-functionality
-
-        # bind specific events to my own functions
-        # self.table.extra_bindings("end_edit_cell", func=self.cell_edited)
-        # self.table.extra_bindings("end_paste", func=self.cells_pasted)
-
         Label(
             self,
             text="""Once the numeric data is in place, set the numeric units for each column, conform the data if
@@ -150,9 +147,72 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         bottom_button_frame.grid_columnconfigure(ALL, weight=1)
         bottom_button_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
+        # set up keybinding and flags
+        self.bind('<Key>', self._handle_button_pressed)
+
         # finalize UI operations
         self.grab_set()
         self.transient(parent_window)
+
+    def _handle_button_pressed(self, event):
+        # relevant_modifiers
+        # mod_shift = 0x1
+        mod_control = 0x4
+        # mod_alt = 0x20000
+        if event.keysym == 'a' and mod_control & event.state:
+            self._add_more_table_rows()
+        elif event.keysym == 'd' and mod_control & event.state:
+            for row in range(self.table.total_rows()):
+                if row == 0:
+                    continue
+                for col in range(self.table.total_columns()):
+                    self.table.set_cell_data(row, col, (row + 1.0) * (col + 1.0))
+            self.table.redraw()
+            self._cells_pasted()
+
+    def _cell_edited(self, event):
+        row = event.row
+        if row == 0:
+            return
+        column = event.column
+        # first check the current value to see if it was already bad -- it will be the old value in the cell
+        current_value = self.table.get_cell_data(row, column)
+        try:
+            float(current_value)
+            was_good = True
+        except ValueError:
+            was_good = False
+        try:
+            float(event.text)
+            self.table.highlight_cells(row, column, bg='white')
+            # if it was good already, and good now, we are done
+            # if it was bad, and now good, decrement the counter
+            if not was_good:
+                self._num_bad_cells -= 1
+        except ValueError:
+            self.table.highlight_cells(row, column, bg='pink')
+            # if it was bad already, and bad now, we are done
+            # if it was good, and now bad, increment the counter
+            if was_good:
+                self._num_bad_cells += 1
+        self.table.redraw()
+
+    def _cells_pasted(self, _=None):
+        self._num_bad_cells = 0
+        for row in range(self.table.total_rows()):
+            if row == 0:
+                continue
+            for column in range(self.table.total_columns()):
+                try:
+                    float(self.table.get_cell_data(row, column))
+                    self.table.highlight_cells(row, column, bg='white')
+                except ValueError:
+                    self._num_bad_cells += 1
+                    self.table.highlight_cells(row, column, bg='pink')
+        self.table.redraw()
+
+    def _table_data_all_good(self) -> bool:
+        return self._num_bad_cells == 0
 
     def _add_more_table_rows(self):
         self.table.insert_rows(rows=10, redraw=True)
@@ -179,6 +239,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                 units_value_this_column = self.table.get_cell_data(0, c)  # just get the data from the cell
             if units_value_this_column != self.columnar_preferred_unit_string[c]:
                 self.need_to_conform_units = True
+        self._cells_pasted()  # simulate a paste event
         self.refresh_done_conform_button_text()
 
     def refresh_done_conform_button_text(self):
@@ -192,6 +253,13 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         pass
 
     def _done_or_conform(self):
+        # don't try to conorm or exit if there are any bad values
+        if not self._table_data_all_good():
+            message_window = PetMessageForm(
+                self, "Value Issue", f"{self._num_bad_cells} cell(s) appear to have bad values; fix them and retry"
+            )
+            self.wait_window(message_window)
+            return
         if self.need_to_conform_units:
             self.conform_units()
         else:

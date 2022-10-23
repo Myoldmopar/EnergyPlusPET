@@ -2,6 +2,7 @@ from tkinter import Toplevel, Frame, LabelFrame  # containers
 from tkinter import Button, Label, OptionMenu, Entry  # widgets
 from tkinter import TOP, X, RIDGE, BOTH, ALL, END  # appearance stuff
 from tkinter import StringVar, DoubleVar  # dynamic variables
+from tkinter import TclError
 from typing import Callable
 
 from energyplus_pet.forms.basic_message_form import PetMessageForm
@@ -42,10 +43,15 @@ class ConstantParameterEntryWidget(Frame):
         self._preferred_unit_string = self._unit_id_to_string_mapping[preferred_unit_id]
         Label(self, text=rp.title).grid(row=0, column=0, padx=p, pady=p)
         Label(self, text=rp.description).grid(row=1, column=0, padx=p, pady=p)
-        self.var_value = DoubleVar(value=rp.default_value)
-        self.entry = Entry(self, textvariable=self.var_value)
+        # create a tk variable to hold the value in the entry, don't assign it a value yet
+        self._tk_var_value = DoubleVar()
+        # create the entry pointing it back to the tk variable
+        self.entry = Entry(self, textvariable=self._tk_var_value)
         self.entry.grid(row=0, column=1, padx=p, pady=p)
         self.entry.bind('<FocusIn>', lambda x: self.entry.selection_range(0, END))
+        # set up a trace to the value to track any changes and assign it in order to initialize self.valid_number flag
+        self._tk_var_value.trace('w', self._validate_number)
+        self._tk_var_value.set(rp.default_value)
         self.var_units_string = StringVar(value=self._preferred_unit_string)
         o = OptionMenu(self, self.var_units_string, *unit_strings, command=self._units_changed)
         o.config(takefocus=1)
@@ -58,6 +64,19 @@ class ConstantParameterEntryWidget(Frame):
         """Handler for user changing units, just sets a flag for the parent form"""
         self.units_conformed = proposed_units == self._preferred_unit_string
         self._units_changed_handler()
+
+    def _validate_number(self, *_):
+        try:
+            float(self._tk_var_value.get())
+            self.valid_number = True
+            self.entry['background'] = 'white'
+        except TclError:
+            self.valid_number = False
+            self.entry['background'] = 'pink'
+
+    def current_value(self):
+        """Returns the private value of the numeric entry"""
+        return self._tk_var_value.get()
 
     def conform_units(self):
         """
@@ -73,11 +92,11 @@ class ConstantParameterEntryWidget(Frame):
             self.wait_window(pmf)
             self.units_conformed = False
             return
-        current_value = self.var_value.get()
+        current_value = self._tk_var_value.get()
         unit_value = unit_instance_factory(current_value, self._unit_type)
         unit_value.units = current_unit_id
         unit_value.convert_to_calculation_unit()
-        self.var_value.set(unit_value.value)
+        self._tk_var_value.set(unit_value.value)
         self.var_units_string.set(self._preferred_unit_string)
         self.units_conformed = True
 
@@ -132,9 +151,13 @@ class ConstantParameterEntryForm(Toplevel):
                 parameter_widget.conform_units()
             self.check_all_units()
         else:
-            self.form_cancelled = False
+            if any([not x.valid_number for x in self.known_parameters]):
+                pmf = PetMessageForm(self, "Numeric Issue", "At least one entry has an invalid value, fix and retry.")
+                self.wait_window(pmf)
+                return
             for parameter_widget in self.known_parameters:
-                self.parameter_value_map[parameter_widget.rp_id] = parameter_widget.var_value.get()
+                self.parameter_value_map[parameter_widget.rp_id] = parameter_widget.current_value()
+            self.form_cancelled = False
             self.close_me()
 
     def close_me(self):

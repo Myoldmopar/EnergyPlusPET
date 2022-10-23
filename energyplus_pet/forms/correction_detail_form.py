@@ -96,26 +96,29 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         for mod_column in _cf.columns_to_modify:
             column_titles.append(eq.headers().name_array()[mod_column])
         # TODO: should the following be +2 for db/wb replacement?
-        self.table = Sheet(self.tabular_frame)
+        num_columns_in_table = len(self.completed_factor.columns_to_modify) + 1  # 1 is for base column(s)
+        num_rows_in_table = self.completed_factor.num_corrections  # no need to add a header or anything here
         pretend_data = []
-        for row in range(_cf.num_corrections):
+        for row in range(num_rows_in_table):
             this_row = []
-            for col in range(len(_cf.columns_to_modify) + 1):
-                this_row.append(row * col)
+            for col in range(num_columns_in_table):
+                this_row.append(0.0)
             pretend_data.append(this_row)
-        self.table.headers(column_titles)
+        self._num_bad_cells = 0
+        self.table = Sheet(self.tabular_frame)
         self.table.set_sheet_data(pretend_data)
+        self.table.headers(column_titles)
         self.table.enable_bindings()
         self.table.set_options(expand_sheet_if_paste_too_big=False)
         self.table.hide(canvas="row_index")
         self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
         # https://github.com/ragardner/tksheet/blob/master/DOCUMENTATION.md#25-example-custom-right-click-and-text-editor-functionality
-        # self.table.extra_bindings("end_edit_cell", func=self.cell_edited)
-        # self.table.extra_bindings("end_paste", func=self.cells_pasted)
+        self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
+        self.table.extra_bindings("end_paste", func=self._cells_pasted)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         self.tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
-        # we block resizing the table when pasting, and we are hiding the row titles to block inserting rows there,
+        # we block resizing the table when pasting, and we are hiding the row titles to block inserting rows via title,
         # but we can't seem to block tksheet from allowing a column insert, so we will just have to check later
         # https://github.com/ragardner/tksheet/blob/0ed6ee8611a7062eedfe43333e7760e1f22088af/tksheet/_tksheet_main_table.py#L3172
         # store the expected number of columns and if it doesn't match later just make the user fix it
@@ -135,11 +138,62 @@ The correction factor requires multiplier values for the following {len(_cf.colu
 
         # draw factors, in case there already are any
         # self.draw_factors()
-        # set up connections/config calls as needed
+
+        # set up keybinding and flags
+        self.bind('<Key>', self._handle_button_pressed)
 
         # finalize UI operations
         self.grab_set()
         self.transient(parent_window)
+
+    def _handle_button_pressed(self, event):
+        # relevant_modifiers
+        # mod_shift = 0x1
+        mod_control = 0x4
+        # mod_alt = 0x20000
+        if event.keysym == 'd' and mod_control & event.state:
+            for row in range(self.completed_factor.num_corrections):
+                for col in range(len(self.completed_factor.columns_to_modify) + 1):
+                    self.table.set_cell_data(row, col, (row + 1.0) * (col + 1.0))
+            self._cells_pasted()
+
+    def _cell_edited(self, event):
+        row = event.row
+        column = event.column
+        # first check the current value to see if it was already bad -- it will be the old value in the cell
+        current_value = self.table.get_cell_data(row, column)
+        try:
+            float(current_value)
+            was_good = True
+        except ValueError:
+            was_good = False
+        try:
+            float(event.text)
+            self.table.highlight_cells(row, column, bg='white')
+            # if it was good already, and good now, we are done
+            # if it was bad, and now good, decrement the counter
+            if not was_good:
+                self._num_bad_cells -= 1
+        except ValueError:
+            self.table.highlight_cells(row, column, bg='pink')
+            # if it was bad already, and bad now, we are done
+            # if it was good, and now bad, increment the counter
+            if was_good:
+                self._num_bad_cells += 1
+
+    def _cells_pasted(self, _=None):
+        self._num_bad_cells = 0
+        for row in range(self.table.total_rows()):
+            for column in range(self.table.total_columns()):
+                try:
+                    float(self.table.get_cell_data(row, column))
+                    self.table.highlight_cells(row, column, bg='white')
+                except ValueError:
+                    self._num_bad_cells += 1
+                    self.table.highlight_cells(row, column, bg='pink')
+
+    def _table_data_all_good(self) -> bool:
+        return self._num_bad_cells == 0
 
     def _units_changed(self, proposed_units):
         """This function is called back by the OptionMenu with the new value, so we don't need to check anything"""
@@ -156,15 +210,19 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         self.table.redraw()
 
     def _done_or_conform(self):
+        # don't try to conorm or exit if there are any bad values
+        if not self._table_data_all_good():
+            message_window = PetMessageForm(
+                self, "Value Issue", f"{self._num_bad_cells} cell(s) appear to have bad values; fix them and retry"
+            )
+            self.wait_window(message_window)
+            return
         if self.need_to_conform_units:
             self.conform_units()
         else:
             if self.expected_num_columns != self.table.total_columns():
                 message_window = PetMessageForm(
-                    self,
-                    "Problem with Table Size",
-                    "It appears the table column size does not match the expected size, this is odd, cancel and retry",
-                    justify_message_left=True
+                    self, "Problem with Table Size", "Table column size does not match expected size, cancel and retry"
                 )
                 self.wait_window(message_window)
                 return
