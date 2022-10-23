@@ -195,6 +195,13 @@ The correction factor requires multiplier values for the following {len(_cf.colu
     def _table_data_all_good(self) -> bool:
         return self._num_bad_cells == 0
 
+    def any_blank_cells(self):
+        for row in range(self.table.total_rows()):
+            for col in range(self.table.total_columns()):
+                if self.table.get_cell_data(row, col) == '':
+                    return True
+        return False
+
     def _units_changed(self, proposed_units):
         """This function is called back by the OptionMenu with the new value, so we don't need to check anything"""
         self.need_to_conform_units = False
@@ -223,6 +230,14 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             if self.expected_num_columns != self.table.total_columns():
                 message_window = PetMessageForm(
                     self, "Problem with Table Size", "Table column size does not match expected size, cancel and retry"
+                )
+                self.wait_window(message_window)
+                return
+            if self.any_blank_cells():
+                message_window = PetMessageForm(
+                    self,
+                    "Problem with Table Entries",
+                    "Blank entries detected in the table, fix and retry"
                 )
                 self.wait_window(message_window)
                 return

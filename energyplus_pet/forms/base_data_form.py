@@ -55,7 +55,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.columnar_ip_unit_string = []
         self.columnar_preferred_unit_string = []
         self.columnar_units_are_preferred = []  # boolean check
-        for row in range(6):  # TODO: Add support to add more rows, then when reading data, check for blank
+        for row in range(eq.minimum_data_points_for_generation() + 1):
             this_row = []
             if row == 0:
                 for col in range(len(column_units)):
@@ -217,6 +217,13 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
     def _add_more_table_rows(self):
         self.table.insert_rows(rows=10, redraw=True)
 
+    def any_blank_cells(self):
+        for row in range(self.table.total_rows()):
+            for col in range(self.table.total_columns()):
+                if self.table.get_cell_data(row, col) == '':
+                    return True
+        return False
+
     # def _repair(self): pass
 
     def _quick_convert_ip(self):
@@ -267,8 +274,15 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                 message_window = PetMessageForm(
                     self,
                     "Problem with Table Size",
-                    "It appears the table column size does not match the expected size, this is odd, cancel and retry",
-                    justify_message_left=True
+                    "It appears the table column size does not match the expected size, this is odd, cancel and retry"
+                )
+                self.wait_window(message_window)
+                return
+            if self.any_blank_cells():
+                message_window = PetMessageForm(
+                    self,
+                    "Problem with Table Entries",
+                    "Blank entries detected in the table, fix and retry"
                 )
                 self.wait_window(message_window)
                 return
