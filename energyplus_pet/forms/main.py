@@ -335,6 +335,7 @@ class EnergyPlusPetWindow(Tk):
         self._update_status_bar('Started catalog wizard')
         self._update_all_output_boxes('Catalog wizard starting')
 
+        self._tk_var_progress.set(0)
         self._progress['maximum'] = self._equip_instance.get_number_of_progress_steps() + 9  # 9 steps in here
         self._handler_thread_increment()
 
@@ -530,7 +531,8 @@ class EnergyPlusPetWindow(Tk):
             self._update_par_box(self._equip_instance.to_parameter_summary())
             self._update_idf_box(self._equip_instance.to_eplus_idf_object())
             self._update_json_box(self._equip_instance.to_eplus_epjson_object())
-            ComparisonPlot(self, self._catalog_data_manager, self._equip_instance)
+            self.wait_window(ComparisonPlot(self, self._catalog_data_manager, self._equip_instance))
+            self._tk_var_progress.set(100)
         else:
             self._update_all_output_boxes(err_message)
 

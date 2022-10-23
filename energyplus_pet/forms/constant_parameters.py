@@ -1,6 +1,6 @@
 from tkinter import Toplevel, Frame, LabelFrame  # containers
 from tkinter import Button, Label, OptionMenu, Entry  # widgets
-from tkinter import TOP, X, RIDGE, BOTH, ALL  # appearance stuff
+from tkinter import TOP, X, RIDGE, BOTH, ALL, END  # appearance stuff
 from tkinter import StringVar, DoubleVar  # dynamic variables
 from typing import Callable
 
@@ -43,7 +43,9 @@ class ConstantParameterEntryWidget(Frame):
         Label(self, text=rp.title).grid(row=0, column=0, padx=p, pady=p)
         Label(self, text=rp.description).grid(row=1, column=0, padx=p, pady=p)
         self.var_value = DoubleVar(value=rp.default_value)
-        Entry(self, textvariable=self.var_value).grid(row=0, column=1, padx=p, pady=p)
+        self.entry = Entry(self, textvariable=self.var_value)
+        self.entry.grid(row=0, column=1, padx=p, pady=p)
+        self.entry.bind('<FocusIn>', lambda x: self.entry.selection_range(0, END))
         self.var_units_string = StringVar(value=self._preferred_unit_string)
         o = OptionMenu(self, self.var_units_string, *unit_strings, command=self._units_changed)
         o.config(takefocus=1)
@@ -79,6 +81,10 @@ class ConstantParameterEntryWidget(Frame):
         self.var_units_string.set(self._preferred_unit_string)
         self.units_conformed = True
 
+    def set_focus_to_entry(self):
+        """Sets the focus to the entry box, used for initializing the form"""
+        self.entry.focus()
+
 
 class ConstantParameterEntryForm(Toplevel):
 
@@ -106,6 +112,7 @@ class ConstantParameterEntryForm(Toplevel):
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         self.check_all_units()
+        self.known_parameters[0].set_focus_to_entry()
         # finalize UI operations
         self.grab_set()
         self.transient(parent_window)

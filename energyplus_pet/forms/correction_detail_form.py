@@ -235,12 +235,10 @@ if __name__ == "__main__":
     from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
 
     root = Tk()
-    def b(*_): print("hey")
-    Button(root, text="Hey", command=b).pack()
     cf = CorrectionFactor('Load Side Temperature Correction')
     cf.num_corrections = 5
     cf.base_column_index = 0
-    cf.columns_to_modify = [4, 5, 6]
+    cf.columns_to_modify = [4, 5]
     cf.correction_type = CorrectionFactorType.Replacement
     DetailedCorrectionFactorForm(root, cf, WaterToAirHeatPumpHeatingCurveFit(), 1, 2)
     root.mainloop()

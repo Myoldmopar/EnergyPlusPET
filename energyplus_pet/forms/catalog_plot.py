@@ -26,7 +26,8 @@ class CatalogDataPlotForm(Toplevel):
 
     def __init__(self, parent_window, cdm: CatalogDataManager, eq: BaseEquipment):
         super().__init__(parent_window)
-        self.exit_code = CatalogDataPlotForm.ExitCode.OK
+        self.exit_code = CatalogDataPlotForm.ExitCode.CANCEL
+        p = 4
         Label(self, text="Here's some info about this catalog data\nClick through the plots to inspect").pack(
             side=TOP, expand=True, fill=X
         )
@@ -57,13 +58,13 @@ class CatalogDataPlotForm(Toplevel):
             canvas = FigureCanvasTkAgg(fig, master=plot_frame)
             canvas.get_tk_widget().pack()
             canvas.draw()
-        plot_notebook.pack(side=TOP, expand=True, fill=BOTH)
+        plot_notebook.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         button_frame = Frame(self)
-        Button(button_frame, text="Looks good, generate parameters", command=self.ok).grid(
-            row=0, column=0, padx=3, pady=3
+        Button(button_frame, text=u"\U0001f44D Looks good, generate parameters", command=self.ok).grid(
+            row=0, column=0, padx=p, pady=p
         )
-        Button(button_frame, text="Something is wrong -- cancel", command=self.cancel).grid(
-            row=0, column=1, padx=3, pady=3
+        Button(button_frame, text="\U0001f44E Something is wrong -- Cancel Wizard", command=self.cancel).grid(
+            row=0, column=1, padx=p, pady=p
         )
         button_frame.grid_columnconfigure(ALL, weight=1)
         button_frame.pack(side=TOP, expand=False, fill=X)
@@ -84,18 +85,19 @@ class CatalogDataPlotForm(Toplevel):
 
 
 if __name__ == "__main__":
+    from random import randint
     from tkinter import Tk
-    from energyplus_pet.equipment.wahp_cooling_curve import WaterToWaterHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_cooling_curve import WaterToAirHeatPumpCoolingCurveFit
 
     window = Tk()
     _cdm = CatalogDataManager()
-    _cdm.add_base_data(
-        [
-            [1, 2, 3, 4, 5, 6, 7],
-            [2, 3, 4, 5, 6, 7, 8],
-            [3, 4, 5, 6, 7, 8, 9]
-        ]
-    )
+    d = []
+    for i in range(3):
+        row = []
+        for j in range(7):
+            row.append(randint(1, 10))
+        d.append(row)
+    _cdm.add_base_data(d)
     _cdm.apply_correction_factors(3)
-    start = CatalogDataPlotForm(window, _cdm, WaterToWaterHeatPumpHeatingCurveFit())
+    start = CatalogDataPlotForm(window, _cdm, WaterToAirHeatPumpCoolingCurveFit())
     window.mainloop()

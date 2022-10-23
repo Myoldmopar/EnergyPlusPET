@@ -84,7 +84,7 @@ If you have any correction factors, add them here, otherwise, press done to cont
         #
         s_1 = Separator(self, orient=HORIZONTAL)
         button_frame = Frame(self)
-        btn_add = Button(button_frame, text="Add Correction Factor", command=self._add_factor_widget)
+        btn_add = Button(button_frame, text="Add Correction Factor (Ctrl-a)", command=self._add_factor_widget)
         self._txt_done_skip = StringVar(value=self._text_skip)
         btn_ok_skip = Button(button_frame, textvariable=self._txt_done_skip, command=self._done_skip)
         btn_cancel = Button(button_frame, text="Cancel Wizard", command=self._cancel)
@@ -101,6 +101,15 @@ If you have any correction factors, add them here, otherwise, press done to cont
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.grid_columnconfigure(2, weight=1)
+        self.bind('<Key>', self._handle_button_pressed)
+
+    def _handle_button_pressed(self, event):
+        # relevant_modifiers
+        # mod_shift = 0x1
+        mod_control = 0x4
+        # mod_alt = 0x20000
+        if event.keysym == 'a' and mod_control & event.state:
+            self._add_factor_widget()
 
     def _handle_mouse_wheel_event_linux(self, event, scroll):
         amount_to_scroll_canvas = int(scroll)
@@ -182,3 +191,12 @@ If you have any correction factors, add them here, otherwise, press done to cont
         self.exit_code = CorrectionFactorSummaryForm.ExitCode.Cancel
         self.grab_release()
         self.destroy()
+
+
+if __name__ == "__main__":
+    from tkinter import Tk
+    from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
+
+    root = Tk()
+    CorrectionFactorSummaryForm(root, WaterToAirHeatPumpHeatingCurveFit())
+    root.mainloop()

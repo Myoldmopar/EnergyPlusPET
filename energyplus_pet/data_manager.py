@@ -18,9 +18,8 @@ class CatalogDataManager:
         """
         Create a new CatalogDataManager instance, initializing arrays and flags.
         """
-        self.correction_factors: List[CorrectionFactor] = []
-        self.base_data: List[List[float]] = []  # inner arrays are column allocated: self.base_data[data_point][column]
-        self.constant_parameters: Dict[str, BaseValueWithUnit]
+        self._correction_factors: List[CorrectionFactor] = []
+        self._base_data: List[List[float]] = []  # inner arrays are column allocated: self.base_data[data_point][column]
         self.data_processed = False
         self.final_data_matrix: List[List[float]] = []
         self.last_error_message = ""
@@ -32,17 +31,20 @@ class CatalogDataManager:
         :param cf: A correction factor instance, expecting to be fully fleshed out with summary and detailed data.
         :return: None
         """
-        self.correction_factors.append(cf)
+        self._correction_factors.append(cf)
 
     def add_base_data(self, data: List[List[float]]) -> None:
         """
         Add base data as a list of data point rows, so the array lookup should be data[row][column].
         The data should already be in the calculation_unit for each column.
 
+        Right now this function does not do any checks on the data because the tabular forms are supposed to handle
+        all of that, and the apply_correction_factors function does a bunch of checking as well.
+
         :param data: Catalog base data set in proper units
         :return: None
         """
-        self.base_data = data
+        self._base_data = data
 
     class ProcessResult(Enum):
         OK = auto()
@@ -57,8 +59,8 @@ class CatalogDataManager:
                  ``last_error_message`` member variable with an explanation of what went wrong.
         """
         self.data_processed = True
-        self.final_data_matrix = self.base_data
-        for cf in self.correction_factors:
+        self.final_data_matrix = self._base_data
+        for cf in self._correction_factors:
             updated_data_matrix = deepcopy(self.final_data_matrix)  # deep is required for complex lists of lists
             for cf_row in range(len(cf.base_correction)):  # each row of the cf data implies a new copy of the data set
                 for row in updated_data_matrix:
@@ -82,9 +84,9 @@ class CatalogDataManager:
 
         :return: None
         """
-        self.correction_factors.clear()
+        self._correction_factors.clear()
         self.data_processed = False
-        self.base_data = []
+        self._base_data = []
         self.constant_parameters: Dict[str, BaseValueWithUnit]
         self.final_data_matrix: List[List[float]] = []
         self.last_error_message = ""

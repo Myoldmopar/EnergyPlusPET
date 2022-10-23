@@ -1,8 +1,8 @@
 from enum import auto, Enum
 
 import numpy as np
-from tkinter import Frame, Toplevel, TOP, BOTH, Tk, Label, X
-from tkinter.ttk import Notebook
+from tkinter import Frame, Toplevel, TOP, BOTH, Tk, Label, X, Button
+from tkinter.ttk import Notebook, Separator
 
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
@@ -30,6 +30,7 @@ class ComparisonPlot(Toplevel):
     def __init__(self, parent_window: Tk, _: CatalogDataManager, equip_instance: BaseEquipment):
         super().__init__(parent_window)
         self.title(f"{parent_window.title()}: Results Comparison")
+        p = 4
         data_per_type = {
             ComparisonPlot.PlotType.RawComparison: {
                 "tab_title": "Catalog Data Raw Comparison",
@@ -68,12 +69,20 @@ class ComparisonPlot(Toplevel):
             canvas = FigureCanvasTkAgg(fig, master=plot_frame)
             canvas.get_tk_widget().pack(side=TOP, expand=True, fill=BOTH)
             canvas.draw()
-        plot_notebook.pack(side=TOP, expand=True, fill=BOTH)
+        plot_notebook.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         metrics = [f"{m[0]}: {m[1]}"for m in equip_instance.get_extra_regression_metrics()]
         if metrics:
             Label(self, text='\n'.join(metrics)).pack(side=TOP, expand=False, fill=X)
+        Separator(self, orient='horizontal').pack(fill=X, padx=p, pady=p)
+        Button(self, text="Wizard Complete!  Click here or close the window to finish", command=self.close_me).pack(
+            side=TOP, expand=False, padx=p, pady=p
+        )
         self.grab_set()
         self.transient(parent_window)
+
+    def close_me(self):
+        self.grab_release()
+        self.destroy()
 
 
 if __name__ == "__main__":

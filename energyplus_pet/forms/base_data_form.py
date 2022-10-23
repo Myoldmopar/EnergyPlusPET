@@ -145,7 +145,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
             row=0, column=3, padx=p, pady=p
         )
         Button(
-            bottom_button_frame, text="Cancel", command=self.cancel
+            bottom_button_frame, text="Cancel Wizard", command=self.cancel
         ).grid(row=0, column=4, padx=p, pady=p)
         bottom_button_frame.grid_columnconfigure(ALL, weight=1)
         bottom_button_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
