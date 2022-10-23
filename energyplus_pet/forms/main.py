@@ -63,6 +63,22 @@ class EnergyPlusPetWindow(Tk):
         # window setup operations
         self._update_status_bar("Program Initialized")
         self._refresh_gui_state()
+        self.bind('<Key>', self._handle_button_pressed)
+
+    def _handle_button_pressed(self, event):
+        # relevant_modifiers
+        # mod_shift = 0x1
+        mod_control = 0x4
+        # mod_alt = 0x20000
+        if event.keysym == 'e' and mod_control & event.state:
+            print("Hit Ctrl-e")
+            self._engage()
+        elif event.keysym == 'r' and mod_control & event.state:
+            print("Hit Ctrl-r")
+            self._preview_data()
+        elif event.keysym == 't' and mod_control & event.state:
+            print("Hit Ctrl-t")
+            self._catalog_data_wizard()
 
     def _check_queue(self):
         """Checks the GUI queue for actions and sets a timer to check again each time"""
@@ -165,10 +181,15 @@ class EnergyPlusPetWindow(Tk):
 
     def _build_controls(self, container):
         """Builds out the control section in the middle of the window"""
+        Label(container, text="Select an equipment type in the tree\nand press Ctrl-e or click here:")
         self._button_engage = Button(container, text='Engage Equipment Type', command=self._engage)
         self._button_engage.pack(side=TOP, padx=3, pady=3, fill=X)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
+        Label(container, text="To view the required data for the selected\nequipment, press Ctrl-r or click here:")
         self._button_preview = Button(container, text="Required Data Description", command=self._preview_data)
         self._button_preview.pack(side=TOP, padx=3, pady=3, fill=X)
+        Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
+        Label(container, text="Finally, to enter data and process parameters\n press Ctrl-t or click here:")
         self._button_catalog = Button(container, text="Catalog Data Wizard", command=self._catalog_data_wizard)
         self._button_catalog.pack(side=TOP, padx=3, pady=3, fill=X)
         Label(container, text="Run Progress").pack(side=TOP, padx=3, pady=3)
