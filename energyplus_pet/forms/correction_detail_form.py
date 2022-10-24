@@ -1,8 +1,8 @@
 from enum import Enum, auto
 from tkinter import Toplevel, Frame  # containers
-from tkinter import Button, Label, Entry, OptionMenu  # widgets
+from tkinter import Button, Label, OptionMenu  # widgets
 from tkinter import HORIZONTAL, TOP, X, W, EW, BOTH  # appearance attributes
-from tkinter import StringVar, DoubleVar  # dynamic variables
+from tkinter import StringVar  # dynamic variables
 from tkinter.ttk import Separator
 
 from tksheet import Sheet
@@ -11,13 +11,14 @@ from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorT
 from energyplus_pet.equipment.base import BaseEquipment
 from energyplus_pet.forms.basic_message_form import PetMessageForm
 from energyplus_pet.exceptions import EnergyPlusPetException
-from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue
+from energyplus_pet.units import unit_class_factory, unit_instance_factory, TemperatureValue, UnitType
 
 
 class DetailedCorrectionFactorForm(Toplevel):
     """
     This form is where the user will enter correction factor detailed tabular data
     """
+
     class DetailedCorrectionExitCode(Enum):
         Done = auto()
         Cancel = auto()
@@ -31,38 +32,47 @@ class DetailedCorrectionFactorForm(Toplevel):
         self.need_to_conform_units = False
         # create all the objects
         self.title(f"{parent_window.title()}: Enter Correction Factor Data {cf_num}/{num_cfs}")
-        m_or_r = 'multiplier' if _cf.correction_type == CorrectionFactorType.Multiplier else 'replacement'
         base_column_name = eq.headers().name_array()[_cf.base_column_index]
         dep_column_names = ""
         for mod_column in _cf.columns_to_modify:
             dep_column_names += f"  -- {eq.headers().name_array()[mod_column]}\n"
-        Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
 
-This correction factor requires {_cf.num_corrections} {m_or_r} values for {base_column_name}.
-
-The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
-{dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
         #
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
-        if _cf.correction_is_wb_db:
-            db_frame = Frame(self)
-            db_label = Label(db_frame, text="Dry Bulb Value/Units:")
-            self.db_value = DoubleVar()
-            db_value = Entry(db_frame, textvariable=self.db_value)
-            options = list(TemperatureValue.get_unit_string_map().values())
-            preferred_temp_unit_id = TemperatureValue.calculation_unit_id()
-            preferred_temp_unit_string = TemperatureValue.get_unit_string_map()[preferred_temp_unit_id]
-            # TODO: Need to add tracking and conforming just like the base column units conforming
-            self.db_units_string = StringVar(value=preferred_temp_unit_string)
-            db_units = OptionMenu(db_frame, self.db_units_string, *options)
-            db_label.grid(row=0, column=0, padx=p, pady=p)
-            db_value.grid(row=0, column=1, padx=p, pady=p)
-            db_units.grid(row=0, column=2, padx=p, pady=p)
-            db_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
+        if _cf.correction_type == CorrectionFactorType.CombinedDbWb:
+            Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
+
+This correction factor requires {_cf.num_corrections} replacement values for both dry and wet bulb temps.
+
+The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
+{dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
+            temp_string_options = list(TemperatureValue.get_unit_string_map().values())
+            self.preferred_db_wb_unit_id = TemperatureValue.calculation_unit_id()
+            self.preferred_db_wb_unit_string = TemperatureValue.get_unit_string_map()[self.preferred_db_wb_unit_id]
+            self._tk_var_db_units_string = StringVar(value=self.preferred_db_wb_unit_string)
+            self._tk_var_wb_units_string = StringVar(value=self.preferred_db_wb_unit_string)
+            self._tk_var_db_units_string.trace('w', self._units_changed)
+            self._tk_var_wb_units_string.trace('w', self._units_changed)
+            db_wb_frame = Frame(self)
+            Label(db_wb_frame, text="Dry Bulb Units:").grid(row=0, column=0, padx=p, pady=p)
+            OptionMenu(db_wb_frame, self._tk_var_db_units_string, *temp_string_options).grid(
+                row=0, column=1, padx=p, pady=p
+            )
+            Label(db_wb_frame, text="Wet Bulb Units:").grid(row=1, column=0, padx=p, pady=p)
+            OptionMenu(db_wb_frame, self._tk_var_wb_units_string, *temp_string_options).grid(
+                row=1, column=1, padx=p, pady=p
+            )
+            db_wb_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
             Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
-        if _cf.correction_type == CorrectionFactorType.Replacement:
+        elif _cf.correction_type == CorrectionFactorType.Replacement:
+            Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
+
+This correction factor requires {_cf.num_corrections} replacement values for both dry and wet bulb temps.
+
+The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
+{dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
             replacement_frame = Frame(self)
             replacement_label = Label(replacement_frame, text="Specify the units of the replacement data (column 1):")
             # all we need to do is look up the UnitType for the replacement column
@@ -80,23 +90,38 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             preferred_replacement_unit_id = self.unit_type_class.calculation_unit_id()
             self.preferred_replacement_unit_string = self.unit_id_to_string_mapping[preferred_replacement_unit_id]
             # create a Tk variable to store the currently shown user string for replacement units
-            self.replacement_units_string = StringVar(value=self.preferred_replacement_unit_string)
+            self._tk_var_replacement_units_string = StringVar(value=self.preferred_replacement_unit_string)
+            self._tk_var_replacement_units_string.trace('w', self._units_changed)
             replacement_option = OptionMenu(
-                replacement_frame, self.replacement_units_string,
-                *replacement_unit_strings, command=self._units_changed
+                replacement_frame, self._tk_var_replacement_units_string, *replacement_unit_strings
             )
             replacement_label.grid(row=0, column=0, padx=p, pady=p)
             replacement_option.grid(row=0, column=1, sticky=EW, padx=p, pady=p)
             replacement_frame.pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
             Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
 
+        else:  # regular multiplier
+            Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
+
+This correction factor requires {_cf.num_corrections} multiplier values for {base_column_name}.
+
+The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
+{dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
+
         self.tabular_frame = Frame(self)
-        # TODO: Does db/wb get two independent value columns?
-        column_titles = [eq.headers().name_array()[_cf.base_column_index]]
+        column_titles = list()
+        # build out the independent variables first
+        if self.completed_factor.correction_type != CorrectionFactorType.CombinedDbWb:
+            # just add the one selected base column
+            column_titles.append(eq.headers().name_array()[_cf.base_column_index])
+        else:
+            # this is a db/wb entry, need to add db to column 1 and wb to column 2
+            column_titles.append(eq.headers().name_array()[eq.headers().get_db_column()])
+            column_titles.append(eq.headers().name_array()[eq.headers().get_wb_column()])
+        # then add the dependent variables
         for mod_column in _cf.columns_to_modify:
             column_titles.append(eq.headers().name_array()[mod_column])
-        # TODO: should the following be +2 for db/wb replacement?
-        num_columns_in_table = len(self.completed_factor.columns_to_modify) + 1  # 1 is for base column(s)
+        num_columns_in_table = len(column_titles)
         num_rows_in_table = self.completed_factor.num_corrections  # no need to add a header or anything here
         pretend_data = []
         for row in range(num_rows_in_table):
@@ -129,8 +154,10 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
         button_frame = Frame(self)
-        self.done_conform_text = StringVar(value="This one is done, continue")
-        btn_done_conform = Button(button_frame, textvariable=self.done_conform_text, command=self._done_or_conform)
+        self._tk_var_done_conform_text = StringVar(value="This one is done, continue")
+        btn_done_conform = Button(
+            button_frame, textvariable=self._tk_var_done_conform_text, command=self._done_or_conform
+        )
         btn_cancel = Button(button_frame, text="Cancel Wizard", command=self.cancel)
         btn_done_conform.grid(row=4, column=0, padx=p, pady=p)
         btn_cancel.grid(row=4, column=1, padx=p, pady=p)
@@ -204,18 +231,26 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                     return True
         return False
 
-    def _units_changed(self, proposed_units):
-        """This function is called back by the OptionMenu with the new value, so we don't need to check anything"""
+    def _units_changed(self, *_):
+        """This function is called back by the unit traces, just check all of them"""
         self.need_to_conform_units = False
-        if proposed_units != self.preferred_replacement_unit_string:
-            self.need_to_conform_units = True
+        if self.completed_factor.correction_type == CorrectionFactorType.Multiplier:
+            pass  # nothing to be done, there are no units to conform
+        elif self.completed_factor.correction_type == CorrectionFactorType.Replacement:
+            if self._tk_var_replacement_units_string.get() != self.preferred_replacement_unit_string:
+                self.need_to_conform_units = True
+        elif self.completed_factor.correction_type == CorrectionFactorType.CombinedDbWb:
+            if self._tk_var_db_units_string.get() != self.preferred_db_wb_unit_string:
+                self.need_to_conform_units = True
+            if self._tk_var_wb_units_string.get() != self.preferred_db_wb_unit_string:
+                self.need_to_conform_units = True
         self._refresh_done_conform_button_text()
 
     def _refresh_done_conform_button_text(self):
         if self.need_to_conform_units:
-            self.done_conform_text.set("Conform units")
+            self._tk_var_done_conform_text.set("Conform units")
         else:
-            self.done_conform_text.set("This one is done, continue")
+            self._tk_var_done_conform_text.set("This one is done, continue")
         self.table.redraw()
 
     def _done_or_conform(self):
@@ -266,7 +301,9 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                     this_column.append(float(self.table.get_cell_data(row, col_num)))
                 self.completed_factor.mod_correction_data_column_map[equipment_column_index] = this_column
             output_message = ""
-            if not self.completed_factor.check_ok():
+            db = self.equipment_instance.headers().get_db_column()
+            wb = self.equipment_instance.headers().get_wb_column()
+            if not self.completed_factor.check_ok(db, wb):
                 output_message += f"Errors for {self.completed_factor.name}:\n"
                 for e in self.completed_factor.check_ok_messages:
                     output_message += f" - {e}\n"
@@ -281,21 +318,55 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self.destroy()
 
     def conform_units(self):
-        current_units_string = self.replacement_units_string.get()
-        try:
-            current_unit_id = self.unit_type_class.get_id_from_unit_string(current_units_string)
-        except EnergyPlusPetException:
-            pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
-            self.wait_window(pmf)
-            self.cancel()
-            return
-        for r in range(self.table.total_rows()):
-            cell_value = float(self.table.get_cell_data(r, 0))
-            unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)
-            unit_value.units = current_unit_id
-            unit_value.convert_to_calculation_unit()
-            self.table.set_cell_data(r, 0, unit_value.value)
-        self.replacement_units_string.set(self.preferred_replacement_unit_string)
+        if self.completed_factor.correction_type == CorrectionFactorType.Multiplier:
+            pass  # shouldn't have been able to get here, just carry on, nothing to do
+        elif self.completed_factor.correction_type == CorrectionFactorType.Replacement:
+            db_units_string = self._tk_var_replacement_units_string.get()
+            try:
+                current_db_unit_id = self.unit_type_class.get_id_from_unit_string(db_units_string)
+            except EnergyPlusPetException:
+                pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
+                self.wait_window(pmf)
+                self.cancel()
+                return
+            for r in range(self.table.total_rows()):
+                cell_value = float(self.table.get_cell_data(r, 0))
+                unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)
+                unit_value.units = current_db_unit_id
+                unit_value.convert_to_calculation_unit()
+                self.table.set_cell_data(r, 0, unit_value.value)
+            self._tk_var_replacement_units_string.set(self.preferred_replacement_unit_string)
+        elif self.completed_factor.correction_type == CorrectionFactorType.CombinedDbWb:
+            db_units_string = self._tk_var_db_units_string.get()
+            try:
+                current_db_unit_id = TemperatureValue.get_id_from_unit_string(db_units_string)
+            except EnergyPlusPetException:
+                pmf = PetMessageForm(self, "Unit ID Problem", "Could not match DB unit ID; this is a developer issue.")
+                self.wait_window(pmf)
+                self.cancel()
+                return
+            for r in range(self.table.total_rows()):
+                cell_value = float(self.table.get_cell_data(r, 0))
+                unit_value = unit_instance_factory(cell_value, UnitType.Temperature)
+                unit_value.units = current_db_unit_id
+                unit_value.convert_to_calculation_unit()
+                self.table.set_cell_data(r, 0, unit_value.value)
+            self._tk_var_db_units_string.set(self.preferred_db_wb_unit_string)
+            wb_units_string = self._tk_var_wb_units_string.get()
+            try:
+                current_wb_unit_id = TemperatureValue.get_id_from_unit_string(wb_units_string)
+            except EnergyPlusPetException:
+                pmf = PetMessageForm(self, "Unit ID Problem", "Could not match WB unit ID; this is a developer issue.")
+                self.wait_window(pmf)
+                self.cancel()
+                return
+            for r in range(self.table.total_rows()):
+                cell_value = float(self.table.get_cell_data(r, 1))
+                unit_value = unit_instance_factory(cell_value, UnitType.Temperature)
+                unit_value.units = current_wb_unit_id
+                unit_value.convert_to_calculation_unit()
+                self.table.set_cell_data(r, 1, unit_value.value)
+            self._tk_var_wb_units_string.set(self.preferred_db_wb_unit_string)
         self.need_to_conform_units = False
         self._refresh_done_conform_button_text()
 
@@ -314,6 +385,6 @@ if __name__ == "__main__":
     cf.num_corrections = 5
     cf.base_column_index = 0
     cf.columns_to_modify = [4, 5]
-    cf.correction_type = CorrectionFactorType.Replacement
+    cf.correction_type = CorrectionFactorType.CombinedDbWb
     DetailedCorrectionFactorForm(root, cf, WaterToAirHeatPumpHeatingCurveFit(), 1, 2)
     root.mainloop()

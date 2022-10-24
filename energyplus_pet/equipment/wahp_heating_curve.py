@@ -48,6 +48,17 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         self.predicted_heating_power = []
         self.percent_error_heating_capacity = []
         self.percent_error_heating_power = []
+        # store the headers on the instance so we don't reconstruct it every call to headers()
+        self._headers = ColumnHeaderArray(
+            [
+                ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
+                ColumnHeader("Water-side Volume Flow", UnitType.Flow),
+                ColumnHeader("Air-side Entering Temp", UnitType.Temperature),
+                ColumnHeader("Air-side Volume Flow", UnitType.Flow),
+                ColumnHeader("Heating Capacity", UnitType.Power),
+                ColumnHeader("Heating Power", UnitType.Power)
+            ]
+        )
 
     def this_type(self) -> EquipType:
         return EquipType.WAHP_Heating_CurveFit
@@ -104,16 +115,7 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
             raise EnergyPlusPetException("Bad parameter ID in set_required_constant_parameter")
 
     def headers(self) -> ColumnHeaderArray:
-        return ColumnHeaderArray(
-            [
-                ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
-                ColumnHeader("Water-side Volume Flow", UnitType.Flow),
-                ColumnHeader("Air-side Entering Temp", UnitType.Temperature),
-                ColumnHeader("Air-side Volume Flow", UnitType.Flow),
-                ColumnHeader("Heating Capacity", UnitType.Power),
-                ColumnHeader("Heating Power", UnitType.Power)
-            ]
-        )
+        return self._headers
 
     def to_eplus_idf_object(self) -> str:
         object_name = "Coil:Heating:WaterToAirHeatPump:EquationFit"

@@ -1,5 +1,5 @@
 from tkinter import Button, Frame, Label, LabelFrame, TOP, Spinbox, IntVar, Scrollbar, LEFT, BOTH, RIGHT, EW, \
-    VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable, BooleanVar, Checkbutton, \
+    VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable, BooleanVar, \
     ACTIVE, DISABLED, HORIZONTAL
 from tkinter.ttk import Separator
 from typing import Callable
@@ -31,20 +31,26 @@ class CorrectionSummaryWidget(LabelFrame):
         self.var_num_corrections.trace('w', self._update_from_traces)
         self.var_mod_type.trace('w', self._update_from_traces)
         self.var_base_column.trace('w', self._update_from_traces)
+        self.var_wb_db.trace('w', self._update_from_traces)
 
         # other misc GUI functions
         self._setup_removal_callback(remove_callback)
 
     def _update_from_traces(self, *_):  # pragma: no cover
         self.cf.num_corrections = self.var_num_corrections.get()
-        # self.correction_is_wb_db = self.wb_db_var().get
         if self.var_mod_type.get() == CorrectionFactorType.Multiplier.name:
             self.cf.correction_type = CorrectionFactorType.Multiplier
         elif self.var_mod_type.get() == CorrectionFactorType.Replacement.name:
             self.cf.correction_type = CorrectionFactorType.Replacement
+        elif self.var_mod_type.get() == CorrectionFactorType.CombinedDbWb.name:
+            self.cf.correction_type = CorrectionFactorType.CombinedDbWb
         mod_column = self.var_base_column.get()
         self.cf.base_column_index = self.equip_instance.headers().name_array().index(mod_column)
         self.cf.columns_to_modify = self.columns_listbox.curselection()
+        if self.cf.correction_type == CorrectionFactorType.CombinedDbWb:
+            self.base_column_dropdown['state'] = DISABLED
+        else:
+            self.base_column_dropdown['state'] = ACTIVE
 
     def _setup_removal_callback(self, remove_callback: Callable):
         self.remove_me = False
@@ -79,7 +85,15 @@ class CorrectionSummaryWidget(LabelFrame):
         ).pack(
             side=TOP, anchor=W, padx=p, pady=p
         )
-        lf.grid(row=3, column=0, rowspan=2, columnspan=2, padx=p, pady=p)
+        headers = self.equip_instance.headers()
+        state = ACTIVE if headers.get_db_column() >= 0 and headers.get_wb_column() >= 0 else DISABLED
+        Radiobutton(
+            lf, text="Combined DB/WB Factor", value=CorrectionFactorType.CombinedDbWb.name, variable=self.var_mod_type,
+            state=state
+        ).pack(
+            side=TOP, anchor=W, padx=p, pady=p
+        )
+        lf.grid(row=3, column=0, columnspan=2, padx=p, pady=p)
         Separator(self, orient=VERTICAL).grid(
             row=0, column=1, rowspan=5, sticky=NS, padx=p, pady=p
         )
@@ -87,18 +101,10 @@ class CorrectionSummaryWidget(LabelFrame):
         Label(self, text="Base data column for this correction factor:").grid(
             row=0, column=2, padx=p, pady=p
         )
-        Checkbutton(
-            self,
-            text="This correction factor adjusts wet-bulb\n& dry-Bulb as base columns together",
-            variable=self.var_wb_db
-        ).grid(
-            row=1, column=2, sticky=EW, padx=p, pady=p
-        )
-        self.var_wb_db.trace('w', self._wb_db_changed)
         self.base_column_dropdown = OptionMenu(self, self.var_base_column, *options.get())
-        self.base_column_dropdown.grid(row=2, column=2, sticky=EW, padx=p, pady=p)
+        self.base_column_dropdown.grid(row=1, column=2, sticky=EW, padx=p, pady=p)
         Label(self, text="Data affected by this correction factor:").grid(
-            row=3, column=2, padx=p, pady=p
+            row=2, column=2, padx=p, pady=p
         )
         columns_frame = Frame(self)
         self.columns_listbox = Listbox(columns_frame, height=5, listvariable=options, selectmode=MULTIPLE)
@@ -110,14 +116,8 @@ class CorrectionSummaryWidget(LabelFrame):
         self.columns_listbox.config(yscrollcommand=columns_scroll.set)
         columns_scroll.config(command=self.columns_listbox.yview)
         columns_frame.grid(
-            row=4, column=2, sticky=EW, padx=p, pady=p
+            row=3, column=2, sticky=EW, padx=p, pady=p
         )
-
-    def _wb_db_changed(self, *_):
-        if self.var_wb_db.get():
-            self.base_column_dropdown['state'] = DISABLED
-        else:
-            self.base_column_dropdown['state'] = ACTIVE
 
     def _remove(self):
         self.remove_me = True
@@ -125,7 +125,9 @@ class CorrectionSummaryWidget(LabelFrame):
 
     def check_ok(self) -> bool:
         """Checks the underlying correction factor for validity"""
-        return self.cf.check_ok(summary_only=True)
+        db = self.equip_instance.headers().get_db_column()
+        wb = self.equip_instance.headers().get_wb_column()
+        return self.cf.check_ok(db, wb, summary_only=True)
 
     def description(self):
         return f"CorrectionFactor {self.equip_instance.name}; {self.cf.num_corrections} corrections"

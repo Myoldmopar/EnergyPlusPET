@@ -6,6 +6,7 @@ from typing import Dict, List
 class CorrectionFactorType(Enum):
     Multiplier = auto()
     Replacement = auto()
+    CombinedDbWb = auto()
 
 
 class CorrectionFactor:
@@ -31,7 +32,6 @@ class CorrectionFactor:
         # The following are the variables that define this correction factor summary, initialize them as needed and the
         # widget should reflect the initialized values by setting Tk Variables appropriately.
         self.num_corrections: int = 5
-        self.correction_is_wb_db: bool = False
         self.wb_db_correction_wb_column: int = -1
         self.wb_db_correction_db_column: int = -1
         self.correction_type: CorrectionFactorType = CorrectionFactorType.Multiplier
@@ -65,11 +65,13 @@ class CorrectionFactor:
 * Mod Correction Matrix:
 {dumps(self.mod_correction_data_column_map, indent=2)}"""
 
-    def check_ok(self, summary_only: bool = False) -> bool:
+    def check_ok(self, db_column: int, wb_column: int, summary_only: bool = False) -> bool:
         """
         Checks values of this correction factor and returns True or False to indicate success.
         If False, the client can check the .check_ok_last_message for a string message about what is wrong
 
+        :param db_column: The dry-bulb column from the current equipment headers().get_db_column()
+        :param wb_column: The wet-bulb column from the current equipment headers().get_wb_column()
         :param summary_only: If this is True, it will only check summary data, not the full data set
         :return: True if everything looks good, False if not
         """
@@ -78,18 +80,28 @@ class CorrectionFactor:
             self.check_ok_messages.append(
                 f"# of corrections ({self.num_corrections}) is less than 1, this is invalid."
             )
-        if self.correction_type not in [CorrectionFactorType.Multiplier, CorrectionFactorType.Replacement]:
+        if self.correction_type not in list(CorrectionFactorType):
             self.check_ok_messages.append(
                 f"Correction factor type appears invalid: ({self.correction_type})."
             )
-        if self.base_column_index < 0:
-            self.check_ok_messages.append(
-                f"Base column index ({self.base_correction}) is less than 0, invalid."
-            )
-        if self.base_column_index in self._columns_to_modify:
-            self.check_ok_messages.append(
-                "Base column index appears in modification column list, invalid."
-            )
+        if not self.correction_type == CorrectionFactorType.CombinedDbWb:
+            if self.base_column_index < 0:
+                self.check_ok_messages.append(
+                    f"Base column index ({self.base_column_index}) is less than 0, invalid."
+                )
+            if self.base_column_index in self._columns_to_modify:
+                self.check_ok_messages.append(
+                    "Base column index appears in modification column list, invalid."
+                )
+        else:  # is a wet-bulb/dry-bulb type
+            if db_column in self._columns_to_modify:
+                self.check_ok_messages.append(
+                    "Dry-bulb column index appears in modification column list, invalid."
+                )
+            if wb_column in self._columns_to_modify:
+                self.check_ok_messages.append(
+                    "Wet-bulb column index appears in modification column list, invalid."
+                )
         if not summary_only:
             if len(self.base_correction) != self.num_corrections:
                 self.check_ok_messages.append(
