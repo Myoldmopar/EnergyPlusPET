@@ -14,8 +14,8 @@ class TestEquipmentFactory(TestCase):
             EquipType.WAHP_Heating_PE: self.assertIsNone,
             EquipType.WAHP_Cooling_CurveFit: self.assertIsNotNone,
             EquipType.WAHP_Cooling_PE: self.assertIsNone,
-            EquipType.WWHP_Heating_CurveFit: self.assertIsNone,
-            EquipType.WWHP_Cooling_CurveFit: self.assertIsNone,
+            EquipType.WWHP_Heating_CurveFit: self.assertIsNotNone,
+            EquipType.WWHP_Cooling_CurveFit: self.assertIsNotNone,
             EquipType.Pump_ConstSpeed_ND: self.assertIsNone,
         }
         # make sure we have the full set of equipment in our list

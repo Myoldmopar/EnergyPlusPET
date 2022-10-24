@@ -10,8 +10,8 @@ class TestWAHPHeatingCurve(EquipmentTestHelper):
         # initialize the output parameters
         eq.heating_capacity_params = [0] * 5
         eq.heating_power_params = [0] * 5
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 10)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 10)
+        eq.set_required_constant_parameter(eq.rated_air_volume_flow_key, 10)
+        eq.set_required_constant_parameter(eq.rated_water_volume_flow_key, 10)
         eq.set_required_constant_parameter(eq.rated_heating_capacity_key, 10)
         eq.set_required_constant_parameter(eq.rated_heating_power_key, 1)
         self.check_interface(eq, EquipType.WAHP_Heating_CurveFit)
@@ -57,8 +57,8 @@ class TestWAHPHeatingCurve(EquipmentTestHelper):
             [31, 15, 7, 3, 39995.1833215548, 6930.05533568905],
             [32, 16, 8, 4, 41303.8176678445, 7097.20812720848],
         ]
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 50)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 50)
+        eq.set_required_constant_parameter(eq.rated_air_volume_flow_key, 50)
+        eq.set_required_constant_parameter(eq.rated_water_volume_flow_key, 50)
         eq.set_required_constant_parameter(eq.rated_heating_capacity_key, 360)
         eq.set_required_constant_parameter(eq.rated_heating_power_key, 60)
         eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)

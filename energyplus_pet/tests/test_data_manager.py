@@ -116,8 +116,8 @@ class TestDataManager(TestCase):
 
         # test end to end
         eq = WaterToAirHeatPumpHeatingCurveFit()
-        eq.set_required_constant_parameter(eq.rated_load_volume_flow_key, 1)
-        eq.set_required_constant_parameter(eq.rated_source_volume_flow_key, 1)
+        eq.set_required_constant_parameter(eq.rated_air_volume_flow_key, 1)
+        eq.set_required_constant_parameter(eq.rated_water_volume_flow_key, 1)
         eq.set_required_constant_parameter(eq.rated_heating_capacity_key, 10)
         eq.set_required_constant_parameter(eq.rated_heating_power_key, 1)
         eq.generate_parameters(cdm, lambda *_: None, lambda *_: None)
