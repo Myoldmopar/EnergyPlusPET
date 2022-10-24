@@ -9,7 +9,7 @@ readme_contents = readme_file.read_text()
 setup(
     name="energyplus_pet",
     version=VERSION,
-    packages=['energyplus_pet'],
+    packages=['energyplus_pet', 'energyplus_pet.forms', 'energyplus_pet.equipment'],
     description="Parameter Estimation Tools for Generating EnergyPlus Inputs from Raw Performance Data",
     long_description=readme_contents,
     long_description_content_type='text/markdown',
