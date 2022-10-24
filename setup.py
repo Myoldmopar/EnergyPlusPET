@@ -11,13 +11,14 @@ setup(
     version=VERSION,
     packages=['energyplus_pet', 'energyplus_pet.forms', 'energyplus_pet.equipment'],
     description="Parameter Estimation Tools for Generating EnergyPlus Inputs from Raw Performance Data",
+    package_data={"energyplus_pet.forms": ["*.png"]},
     long_description=readme_contents,
     long_description_content_type='text/markdown',
     author='Edwin Lee',
     author_email='a@a.a',
     url='https://github.com/Myoldmopar/EnergyPlusPet',
     license='UnlicensedForNow',
-    install_requires=['pyperclip', 'tksheet', 'matplotlib', 'numpy'],
+    install_requires=['pyperclip', 'tksheet', 'matplotlib', 'numpy', 'scipy'],
     entry_points={
         'console_scripts': ['energyplus_pet_gui=energyplus_pet.runner:main_gui']
     }
