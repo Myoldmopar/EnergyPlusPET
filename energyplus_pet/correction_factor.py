@@ -32,15 +32,16 @@ class CorrectionFactor:
         # The following are the variables that define this correction factor summary, initialize them as needed and the
         # widget should reflect the initialized values by setting Tk Variables appropriately.
         self.num_corrections: int = 5
-        self.wb_db_correction_wb_column: int = -1
-        self.wb_db_correction_db_column: int = -1
         self.correction_type: CorrectionFactorType = CorrectionFactorType.Multiplier
         self.base_column_index: int = -1
         self._columns_to_modify: List[int] = []
 
-        # The following are the variables that complete the correction factor details.
-        self.correction_db_value: float
+        # for normal corrections, just keep one array of base column data
         self.base_correction: List[float] = []  # could be multipliers or replacement values
+        # for db/wb corrections, just keep two separate arrays
+        self.base_correction_db: List[float] = []  # could be multipliers or replacement values
+        self.base_correction_wb: List[float] = []  # could be multipliers or replacement values
+        # keep a dict of dependent variable modifiers keyed off of the equipment column number
         self.mod_correction_data_column_map: Dict[int, List[float]] = {}
 
     @property
@@ -57,13 +58,19 @@ class CorrectionFactor:
 
     def describe(self) -> str:
         """Returns a multiline descriptive string for this correction factor"""
-        return f"""CorrectionFactor: {self.name}
-* {self.num_corrections} {self.correction_type.name} rows
-* base column {self.base_column_index}
-* modifies columns {self._columns_to_modify}
-* Base Correction Array {self.base_correction}
-* Mod Correction Matrix:
-{dumps(self.mod_correction_data_column_map, indent=2)}"""
+        response = f"CorrectionFactor: {self.name}\n"
+        response += f"* {self.num_corrections} {self.correction_type.name} rows\n"
+        if self.correction_type != CorrectionFactorType.CombinedDbWb:
+            response += f"* base column: {self.base_column_index}\n"
+            response += f"* Base Correction Array: {self.base_correction}\n"
+        else:
+            response += "* base columns are equipment db/wb columns\n"
+            response += f"* Base dry-bulb correction array: {self.base_correction_db}"
+            response += f"* Base wet-bulb correction array: {self.base_correction_wb}"
+        response += f"* modifies columns {self._columns_to_modify}\n"
+        response += "* Mod Correction Matrix:\n"
+        response += dumps(self.mod_correction_data_column_map, indent=2)
+        return response
 
     def check_ok(self, db_column: int, wb_column: int, summary_only: bool = False) -> bool:
         """
@@ -103,10 +110,20 @@ class CorrectionFactor:
                     "Wet-bulb column index appears in modification column list, invalid."
                 )
         if not summary_only:
-            if len(self.base_correction) != self.num_corrections:
-                self.check_ok_messages.append(
-                    'Size of base corrections does not match num_corrections, invalid.'
-                )
+            if not self.correction_type == CorrectionFactorType.CombinedDbWb:
+                if len(self.base_correction) != self.num_corrections:
+                    self.check_ok_messages.append(
+                        'Size of base corrections does not match num_corrections, invalid.'
+                    )
+            else:
+                if len(self.base_correction_db) != self.num_corrections:
+                    self.check_ok_messages.append(
+                        'Size of base dry-bulb corrections does not match num_corrections, invalid.'
+                    )
+                if len(self.base_correction_wb) != self.num_corrections:
+                    self.check_ok_messages.append(
+                        'Size of base wet-bulb corrections does not match num_corrections, invalid.'
+                    )
             if len(self.mod_correction_data_column_map) != len(self._columns_to_modify):
                 self.check_ok_messages.append(
                     'Size of mod correction data does not match columns_to_modify, invalid.'

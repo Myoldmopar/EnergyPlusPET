@@ -48,12 +48,12 @@ class WaterToAirHeatPumpHeatingCurveFit(BaseEquipment):
         self.predicted_heating_power = []
         self.percent_error_heating_capacity = []
         self.percent_error_heating_power = []
-        # store the headers on the instance so we don't reconstruct it every call to headers()
+        # store the headers on the instance, so we don't reconstruct it every call to headers()
         self._headers = ColumnHeaderArray(
             [
                 ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
                 ColumnHeader("Water-side Volume Flow", UnitType.Flow),
-                ColumnHeader("Air-side Entering Temp", UnitType.Temperature),
+                ColumnHeader("Air-side Entering Dry-bulb Temp", UnitType.Temperature, db=True),
                 ColumnHeader("Air-side Volume Flow", UnitType.Flow),
                 ColumnHeader("Heating Capacity", UnitType.Power),
                 ColumnHeader("Heating Power", UnitType.Power)

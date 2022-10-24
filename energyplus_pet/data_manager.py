@@ -50,7 +50,7 @@ class CatalogDataManager:
         OK = auto()
         ERROR = auto()
 
-    def apply_correction_factors(self, minimum_data_points: int) -> ProcessResult:
+    def apply_correction_factors(self, minimum_data_points: int, db_column: int, wb_column: int) -> ProcessResult:
         """
         Process the base data and correction factors to create one large full dataset.
         Validates the data against a series of tests for data diversity and infinite/out-of-range.
@@ -67,8 +67,11 @@ class CatalogDataManager:
                     new_row = list(row)  # list provides a deep copy of a simple list
                     if cf.correction_type == CorrectionFactorType.Multiplier:
                         new_row[cf.base_column_index] *= cf.base_correction[cf_row]
-                    else:  # Replacement
+                    elif cf.correction_type == CorrectionFactorType.Replacement:
                         new_row[cf.base_column_index] = cf.base_correction[cf_row]
+                    elif cf.correction_type == CorrectionFactorType.CombinedDbWb:
+                        new_row[db_column] = cf.base_correction_db[cf_row]
+                        new_row[wb_column] = cf.base_correction_wb[cf_row]
                     for column_to_modify in cf.columns_to_modify:
                         new_row[column_to_modify] *= cf.mod_correction_data_column_map[column_to_modify][cf_row]
                     self.final_data_matrix.append(new_row)

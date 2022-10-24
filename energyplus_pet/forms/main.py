@@ -400,7 +400,9 @@ class EnergyPlusPetWindow(Tk):
 
         # then process the base data and correction factors into a full data set
         response_status = self._catalog_data_manager.apply_correction_factors(
-            self._equip_instance.minimum_data_points_for_generation()
+            self._equip_instance.minimum_data_points_for_generation(),
+            self._equip_instance.headers().get_db_column(),
+            self._equip_instance.headers().get_wb_column()
         )
         if response_status == CatalogDataManager.ProcessResult.ERROR:
             self._update_status_bar('Error processing catalog data')

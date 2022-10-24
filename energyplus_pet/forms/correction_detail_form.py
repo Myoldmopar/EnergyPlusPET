@@ -55,11 +55,13 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self._tk_var_db_units_string.trace('w', self._units_changed)
             self._tk_var_wb_units_string.trace('w', self._units_changed)
             db_wb_frame = Frame(self)
-            Label(db_wb_frame, text="Dry Bulb Units:").grid(row=0, column=0, padx=p, pady=p)
+            db_unit_string = f"Units for DB Column: \"{eq.headers().name_array()[eq.headers().get_db_column()]}\""
+            Label(db_wb_frame, text=db_unit_string).grid(row=0, column=0, padx=p, pady=p)
             OptionMenu(db_wb_frame, self._tk_var_db_units_string, *temp_string_options).grid(
                 row=0, column=1, padx=p, pady=p
             )
-            Label(db_wb_frame, text="Wet Bulb Units:").grid(row=1, column=0, padx=p, pady=p)
+            wb_unit_string = f"Units for WB Column: \"{eq.headers().name_array()[eq.headers().get_wb_column()]}\""
+            Label(db_wb_frame, text=wb_unit_string).grid(row=1, column=0, padx=p, pady=p)
             OptionMenu(db_wb_frame, self._tk_var_wb_units_string, *temp_string_options).grid(
                 row=1, column=1, padx=p, pady=p
             )
@@ -290,15 +292,26 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                         self.wait_window(message_window)
                         return
             # OK, so if we are done, units must be ready, so we just need to update the data in the correction factor
-            # read the first column of data into the base correction of the CF
-            self.completed_factor.base_correction = [
-                float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
-            ]
+            # for regular correction factors, read the first column of data into the base correction of the CF
+            if self.completed_factor.correction_type != CorrectionFactorType.CombinedDbWb:
+                self.completed_factor.base_correction = [
+                    float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
+                ]
+                last_column_read = 0
+            else:  # for db/wb, read the first column into the db array and the second column into the wb array
+                self.completed_factor.base_correction_db = [
+                    float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
+                ]
+                self.completed_factor.base_correction_wb = [
+                    float(self.table.get_cell_data(row, 1)) for row in range(self.completed_factor.num_corrections)
+                ]
+                last_column_read = 1
             # then iterate over the mod column ids of the CF and read the data into lists and then into the CF map
-            for col_num, equipment_column_index in enumerate(self.completed_factor.columns_to_modify):
+            for equipment_column_index in self.completed_factor.columns_to_modify:
+                last_column_read += 1
                 this_column = []
                 for row in range(self.table.total_rows()):
-                    this_column.append(float(self.table.get_cell_data(row, col_num)))
+                    this_column.append(float(self.table.get_cell_data(row, last_column_read)))
                 self.completed_factor.mod_correction_data_column_map[equipment_column_index] = this_column
             output_message = ""
             db = self.equipment_instance.headers().get_db_column()
@@ -378,13 +391,14 @@ The correction factor requires multiplier values for the following {len(_cf.colu
 
 if __name__ == "__main__":
     from tkinter import Tk
-    from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatingCurveFit
+    from energyplus_pet.equipment.wahp_cooling_curve import WaterToAirHeatPumpCoolingCurveFit
 
     root = Tk()
-    cf = CorrectionFactor('Load Side Temperature Correction')
-    cf.num_corrections = 5
+    cf = CorrectionFactor('Load Side DB/WB Temperature Correction')
+    cf.num_corrections = 2
     cf.base_column_index = 0
-    cf.columns_to_modify = [4, 5]
+    cf.columns_to_modify = [5, 6, 7]
     cf.correction_type = CorrectionFactorType.CombinedDbWb
-    DetailedCorrectionFactorForm(root, cf, WaterToAirHeatPumpHeatingCurveFit(), 1, 2)
+    _eq = WaterToAirHeatPumpCoolingCurveFit()
+    DetailedCorrectionFactorForm(root, cf, _eq, 1, 1)
     root.mainloop()

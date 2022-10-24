@@ -15,7 +15,6 @@ class TestCorrectionFactor(TestCase):
         self.assertEqual(3, len(cf.mod_correction_data_column_map))
 
     def test_check_ok(self):
-        # TODO: Use this function in the correction factor data form prior to continuing the wizard
         cf = CorrectionFactor('foo')
         cf.columns_to_modify = [1, 2]
 
@@ -30,7 +29,7 @@ class TestCorrectionFactor(TestCase):
         cf.correction_type = 0
         self.assertFalse(cf.check_ok(db_column_index, wb_column_index))
         cf.correction_type = CorrectionFactorType.Multiplier
-        # test out of bounds base column index
+        # test out-of-bounds base column index
         cf.base_column_index = -1
         self.assertFalse(cf.check_ok(db_column_index, wb_column_index))
         cf.base_column_index = 0
@@ -54,3 +53,4 @@ class TestCorrectionFactor(TestCase):
         # now test it is all good!
         cf.mod_correction_data_column_map = {1: [1.1], 2: [3.1]}
         self.assertTrue(cf.check_ok(db_column_index, wb_column_index))
+        # TODO: thoroughly test db/wb type

@@ -43,6 +43,19 @@ class WaterToAirHeatPumpCoolingCurveFit(BaseEquipment):
         self.percent_error_total_capacity = []
         self.percent_error_sensible_capacity = []
         self.percent_error_cooling_power = []
+        # store the headers as an instance variable, so we don't recreate on each call to headers()
+        self._headers = ColumnHeaderArray(
+            [
+                ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
+                ColumnHeader("Water-side Volume Flow", UnitType.Flow),
+                ColumnHeader("Air-side Entering Dry-bulb Temp", UnitType.Temperature, db=True),
+                ColumnHeader("Air-side Entering Wet-bulb Temp", UnitType.Temperature, wb=True),
+                ColumnHeader("Air-side Volume Flow", UnitType.Flow),
+                ColumnHeader("Total Cooling Capacity", UnitType.Power),
+                ColumnHeader("Sensible Cooling Capacity", UnitType.Power),
+                ColumnHeader("Cooling Power", UnitType.Power),
+            ]
+        )
 
     def this_type(self) -> EquipType:
         return EquipType.WAHP_Cooling_CurveFit
@@ -108,17 +121,7 @@ class WaterToAirHeatPumpCoolingCurveFit(BaseEquipment):
             raise EnergyPlusPetException("Bad parameter ID in set_required_constant_parameter")
 
     def headers(self) -> ColumnHeaderArray:
-        return ColumnHeaderArray(
-            [
-                ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
-                ColumnHeader("Water-side Volume Flow", UnitType.Flow),
-                ColumnHeader("Air-side Entering Temp", UnitType.Temperature),
-                ColumnHeader("Air-side Volume Flow", UnitType.Flow),
-                ColumnHeader("Total Cooling Capacity", UnitType.Power),
-                ColumnHeader("Sensible Cooling Capacity", UnitType.Power),
-                ColumnHeader("Cooling Power", UnitType.Power),
-            ]
-        )
+        return self._headers
 
     def to_eplus_idf_object(self) -> str:
         object_name = "Coil:Cooling:WaterToAirHeatPump:EquationFit"

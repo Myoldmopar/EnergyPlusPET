@@ -17,7 +17,7 @@ class TestDataManager(TestCase):
         # cf = CorrectionFactor('blah')
         # cdm.add_correction_factor(cf)
         # cdm.add_base_data([])
-        status = cdm.apply_correction_factors(minimum_data_points=0)
+        status = cdm.apply_correction_factors(0, -1, -1)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         cdm.reset()
 
@@ -28,7 +28,7 @@ class TestDataManager(TestCase):
             [1, 2, 3, 4],
             [2, 3, 4, 5]
         ])
-        status = cdm.apply_correction_factors(minimum_data_points=0)
+        status = cdm.apply_correction_factors(0, -1, -1)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(3, len(cdm.final_data_matrix))
 
@@ -39,7 +39,7 @@ class TestDataManager(TestCase):
             [1, 2, 3, 4],
             [2, 3, 4, 5]
         ])
-        self.assertEqual(CatalogDataManager.ProcessResult.ERROR, cdm.apply_correction_factors(minimum_data_points=4))
+        self.assertEqual(CatalogDataManager.ProcessResult.ERROR, cdm.apply_correction_factors(4, -1, -1))
 
     def test_process_with_multiplier_factor(self):
         cdm = CatalogDataManager()
@@ -56,7 +56,7 @@ class TestDataManager(TestCase):
         cdm.add_base_data([
             [1.0, 2.0, 3.0, 4.0]
         ])
-        status = cdm.apply_correction_factors(minimum_data_points=0)
+        status = cdm.apply_correction_factors(0, -1, -1)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(
             [
@@ -104,7 +104,7 @@ class TestDataManager(TestCase):
         cdm.add_base_data([
             [1, 1, 1, 1, 200, 10]
         ])
-        status = cdm.apply_correction_factors(minimum_data_points=0)
+        status = cdm.apply_correction_factors(0, -1, -1)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(81, len(cdm.final_data_matrix))
 
