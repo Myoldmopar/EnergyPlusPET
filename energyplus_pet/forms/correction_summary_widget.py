@@ -19,7 +19,7 @@ class CorrectionSummaryWidget(LabelFrame):
         self.equip_instance = equipment_instance
 
         # these are Tk variables for tracking dynamic changes and tracing
-        self.var_base_column = StringVar(value=self.equip_instance.headers().name_array()[self.cf.base_column_index])
+        self.var_base_column = StringVar(value=self.equip_instance.headers().name_array()[0])
         self.var_num_corrections = IntVar(value=self.cf.num_corrections)
         self.var_wb_db = BooleanVar(value=False)
         self.var_mod_type = StringVar(value=self.cf.correction_type.name)

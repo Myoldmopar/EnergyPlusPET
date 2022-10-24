@@ -45,6 +45,7 @@ class TestDataManager(TestCase):
         cdm = CatalogDataManager()
         cf = CorrectionFactor('multi')
         cf.correction_type = CorrectionFactorType.Multiplier
+        cf.num_corrections = 1
         cf.base_column_index = 0
         cf.base_correction = [2.0]
         cf.columns_to_modify = [1, 3]
@@ -71,6 +72,7 @@ class TestDataManager(TestCase):
 
         cf = CorrectionFactor('replacement_1')
         cf.correction_type = CorrectionFactorType.Replacement
+        cf.num_corrections = 2
         cf.base_column_index = 0
         cf.base_correction = [0, 2]
         cf.columns_to_modify = [4, 5]
@@ -79,6 +81,7 @@ class TestDataManager(TestCase):
 
         cf = CorrectionFactor('replacement_2')
         cf.correction_type = CorrectionFactorType.Replacement
+        cf.num_corrections = 2
         cf.base_column_index = 2
         cf.base_correction = [0, 3]
         cf.columns_to_modify = [4, 5]
@@ -87,6 +90,7 @@ class TestDataManager(TestCase):
 
         cf = CorrectionFactor('multiplier_1')
         cf.correction_type = CorrectionFactorType.Multiplier
+        cf.num_corrections = 2
         cf.base_column_index = 1
         cf.base_correction = [0.5, 1.2]
         cf.columns_to_modify = [4, 5]
@@ -95,6 +99,7 @@ class TestDataManager(TestCase):
 
         cf = CorrectionFactor('multiplier_2')
         cf.correction_type = CorrectionFactorType.Multiplier
+        cf.num_corrections = 2
         cf.base_column_index = 3
         cf.base_correction = [0.4, 1.4]
         cf.columns_to_modify = [4, 5]

@@ -62,7 +62,7 @@ class CatalogDataManager:
         self.final_data_matrix = self._base_data
         for cf in self._correction_factors:
             updated_data_matrix = deepcopy(self.final_data_matrix)  # deep is required for complex lists of lists
-            for cf_row in range(len(cf.base_correction)):  # each row of the cf data implies a new copy of the data set
+            for cf_row in range(cf.num_corrections):  # each row of the cf data implies a new copy of the data set
                 for row in updated_data_matrix:
                     new_row = list(row)  # list provides a deep copy of a simple list
                     if cf.correction_type == CorrectionFactorType.Multiplier:

@@ -230,7 +230,6 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.insert_rows(rows=10, redraw=True)
 
     def _shrink_table_to_data(self):
-        minimum_rows = self.equipment_instance.minimum_data_points_for_generation() + 1
         # first find the extents of the data
         current_visible_rows = self.table.total_rows()
         max_row_index_found = 0
@@ -239,6 +238,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                 if self.table.get_cell_data(row, col) != '':
                     max_row_index_found = max(max_row_index_found, row)
         # constrain it to the minimums
+        minimum_rows = 2  # with the use of correction factors, we are ok allowing just one row here
         desired_row_count = max(max_row_index_found, minimum_rows)
         # if table is larger than desired, start at the end and remove until we get to the desired value
         if current_visible_rows > desired_row_count:
