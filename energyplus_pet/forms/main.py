@@ -1,3 +1,4 @@
+from json import dumps
 from pathlib import Path
 from queue import Queue
 from threading import Thread
@@ -209,7 +210,7 @@ class EnergyPlusPetWindow(Tk):
         Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
         Label(container, text="Once complete, use Ctrl-s to save data:").pack(side=TOP, padx=3, pady=3)
         self._button_save_data = Button(
-            container, text="Save Output to File", command=self._save_data_to_file, state="disabled",
+            container, text="Save Output to File", command=self._save_data_to_file, state=DISABLED,
         )
         self._button_save_data.pack(side=TOP, fill=X, padx=3, pady=3)
         Separator(container, orient='horizontal').pack(fill=X, padx=3, pady=3)
@@ -283,13 +284,20 @@ class EnergyPlusPetWindow(Tk):
 
     def _save_data_to_file(self):
         """Saves catalog data to a file"""
-        # TODO: Think about the form, and what all should get saved, all outputs, all catalog data, etc.
-        file_path = filedialog.asksaveasfilename(parent=self, defaultextension=".csv", confirmoverwrite=True)
+        file_path = filedialog.asksaveasfilename(
+            parent=self, filetypes=(('JSON File', '.json'),), confirmoverwrite=True
+        )
         if file_path is None or file_path == ():
             return
         try:
             with open(file_path, 'w') as f:
-                f.write('hello,world')
+                response_object = {
+                    'catalog_inputs': self._catalog_data_manager.summary(),
+                    'parameter_summary': self._output_box_par.get('1.0', END),
+                    'idf_object': self._output_box_idf.get('1.0', END),
+                    'epjson_object': self._output_box_json.get('1.0', END),
+                }
+                f.write(dumps(response_object, indent=2))
         except Exception as e:  # noqa  any file issue could happen
             messagebox.showerror(self._program_name, "Could not save data to file")
 

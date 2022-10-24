@@ -31,6 +31,7 @@ class TestDataManager(TestCase):
         status = cdm.apply_correction_factors(0, -1, -1)
         self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
         self.assertEqual(3, len(cdm.final_data_matrix))
+        self.assertIsInstance(cdm.summary(), dict)
 
     def test_process_not_enough_data(self):
         cdm = CatalogDataManager()

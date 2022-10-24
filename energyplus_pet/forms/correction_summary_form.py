@@ -201,7 +201,5 @@ if __name__ == "__main__":
 
     root = Tk()
     eq = WaterToAirHeatPumpHeatingCurveFit()
-    eq.headers().columns[0].dry_bulb_column_flag = True
-    eq.headers().columns[1].wet_bulb_column_flag = True
     CorrectionFactorSummaryForm(root, eq)
     root.mainloop()

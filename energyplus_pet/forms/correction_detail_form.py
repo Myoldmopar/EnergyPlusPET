@@ -397,8 +397,8 @@ if __name__ == "__main__":
     cf = CorrectionFactor('Load Side DB/WB Temperature Correction')
     cf.num_corrections = 2
     cf.base_column_index = 0
-    cf.columns_to_modify = [5, 6, 7]
-    cf.correction_type = CorrectionFactorType.CombinedDbWb
+    cf.columns_to_modify = [4, 5, 6]
+    cf.correction_type = CorrectionFactorType.Multiplier
     _eq = WaterToAirHeatPumpCoolingCurveFit()
     DetailedCorrectionFactorForm(root, cf, _eq, 1, 1)
     root.mainloop()

@@ -49,7 +49,7 @@ class WaterToAirHeatPumpCoolingCurveFit(BaseEquipment):
                 ColumnHeader("Water-side Entering Temp", UnitType.Temperature),
                 ColumnHeader("Water-side Volume Flow", UnitType.Flow),
                 ColumnHeader("Air-side Entering Dry-bulb Temp", UnitType.Temperature, db=True),
-                ColumnHeader("Air-side Entering Wet-bulb Temp", UnitType.Temperature, wb=True),
+                # ColumnHeader("Air-side Entering Wet-bulb Temp", UnitType.Temperature, wb=True),
                 ColumnHeader("Air-side Volume Flow", UnitType.Flow),
                 ColumnHeader("Total Cooling Capacity", UnitType.Power),
                 ColumnHeader("Sensible Cooling Capacity", UnitType.Power),

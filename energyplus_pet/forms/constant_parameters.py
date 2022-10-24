@@ -164,24 +164,6 @@ class ConstantParameterEntryForm(Toplevel):
         self.grab_release()
         self.destroy()
 
-# Private Sub DataValidation(ByVal Sender As Object, ByVal e As System.ComponentModel.CancelEventArgs)
-    #     Dim txt As TextBox = TryCast(Sender, TextBox)
-    #     If txt Is Nothing Then Exit Sub
-    #     If txt.Text = Nothing Then Exit Sub
-    #     Dim ValidDataSignal As PublicData.DataValidationReturnType = PublicData.DataValidationTest(txt.Text)
-    #     If ValidDataSignal <> DataValidationReturnType.Valid Then
-    #         e.Cancel = True
-    #         txt.SelectAll()
-    #         ERROR
-    #     End If
-    # End Sub
-    #
-    # Private Sub DataValidated(ByVal Sender As Object, ByVal e As System.EventArgs)
-    #     Dim txt As TextBox = TryCast(Sender, TextBox)
-    #     If txt Is Nothing Then Exit Sub
-    #     ErrorSignal.SetError(txt, "")
-    # End Sub
-
 
 if __name__ == "__main__":
     from tkinter import Tk

@@ -46,6 +46,14 @@ class CatalogDataManager:
         """
         self._base_data = data
 
+    def summary(self) -> dict:
+        """Returns a string representation of the catalog data manager as it currently exists"""
+        return {
+            'base_data_in_rows': self._base_data,
+            'correction_factors': [cf.describe() for cf in self._correction_factors],
+            'final_data_rows': self.final_data_matrix
+        }
+
     class ProcessResult(Enum):
         OK = auto()
         ERROR = auto()
