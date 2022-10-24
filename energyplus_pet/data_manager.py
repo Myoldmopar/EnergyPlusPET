@@ -1,9 +1,8 @@
 from copy import deepcopy
 from enum import auto, Enum
-from typing import Dict, List
+from typing import List
 
 from energyplus_pet.correction_factor import CorrectionFactor, CorrectionFactorType
-from energyplus_pet.units import BaseValueWithUnit
 
 
 class CatalogDataManager:
