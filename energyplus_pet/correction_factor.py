@@ -28,16 +28,14 @@ class CorrectionFactor:
         self.name: str = name
         self.check_ok_messages: List[str] = []
 
-        # Once we start supporting the wb/db replacement, we'll need to check from the equipment instance
-        # to see if it should be offered for this catalog data.  Then we'll need to track whether the user
-        # wants it for this particular correction factor.  Then if so I think we need to track the db/wb value separate.
-
         # The following are the variables that define this correction factor summary, initialize them as needed and the
         # widget should reflect the initialized values by setting Tk Variables appropriately.
         self.num_corrections: int = 5
         self.correction_is_wb_db: bool = False
+        self.wb_db_correction_wb_column: int = -1
+        self.wb_db_correction_db_column: int = -1
         self.correction_type: CorrectionFactorType = CorrectionFactorType.Multiplier
-        self.base_column_index: int = 0
+        self.base_column_index: int = -1
         self._columns_to_modify: List[int] = []
 
         # The following are the variables that complete the correction factor details.

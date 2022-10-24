@@ -1,5 +1,6 @@
 from tkinter import Button, Frame, Label, LabelFrame, TOP, Spinbox, IntVar, Scrollbar, LEFT, BOTH, RIGHT, EW, \
-    VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable
+    VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable, BooleanVar, Checkbutton, \
+    ACTIVE, DISABLED, HORIZONTAL
 from tkinter.ttk import Separator
 from typing import Callable
 
@@ -20,7 +21,7 @@ class CorrectionSummaryWidget(LabelFrame):
         # these are Tk variables for tracking dynamic changes and tracing
         self.var_base_column = StringVar(value=self.equip_instance.headers().name_array()[self.cf.base_column_index])
         self.var_num_corrections = IntVar(value=self.cf.num_corrections)
-        # self.wb_db_var = BooleanVar(value=False)
+        self.var_wb_db = BooleanVar(value=False)
         self.var_mod_type = StringVar(value=self.cf.correction_type.name)
 
         # finally build out the gui ahead of setting up the traces
@@ -54,6 +55,9 @@ class CorrectionSummaryWidget(LabelFrame):
         Button(self, text="❌ Remove This Factor", command=self._remove).grid(
             row=0, column=0, padx=p, pady=p
         )
+        Separator(self, orient=HORIZONTAL).grid(
+            row=1, column=0, sticky=EW, padx=p, pady=p
+        )
         corr_frame = Frame(self)
         Label(corr_frame, text="# Correction Values").grid(
             row=0, column=0, padx=p, pady=p
@@ -62,14 +66,8 @@ class CorrectionSummaryWidget(LabelFrame):
             row=0, column=1, padx=p, pady=p
         )
         corr_frame.grid(
-            row=1, column=0, padx=p, pady=p
+            row=2, column=0, padx=p, pady=p
         )
-        # Checkbutton(f, text="This is a WB/DB Factor", variable=self.wb_db_factor, state="disabled").grid(
-        #     row=2, column=1, columnspan=2, rowspan=2, padx=p, pady=p
-        # )
-        # Separator(f, orient=VERTICAL).grid(
-        #     row=0, column=3, rowspan=4, sticky=NS, padx=p, pady=p
-        # )
         lf = LabelFrame(self, text="Correction Factor Type")
         Radiobutton(
             lf, text="Multiplier", value=CorrectionFactorType.Multiplier.name, variable=self.var_mod_type
@@ -81,19 +79,26 @@ class CorrectionSummaryWidget(LabelFrame):
         ).pack(
             side=TOP, anchor=W, padx=p, pady=p
         )
-        lf.grid(row=2, column=0, rowspan=2, columnspan=2, padx=p, pady=p)
+        lf.grid(row=3, column=0, rowspan=2, columnspan=2, padx=p, pady=p)
         Separator(self, orient=VERTICAL).grid(
-            row=0, column=1, rowspan=4, sticky=NS, padx=p, pady=p
+            row=0, column=1, rowspan=5, sticky=NS, padx=p, pady=p
         )
         options = Variable(value=self.equip_instance.headers().name_array())
         Label(self, text="Base data column for this correction factor:").grid(
             row=0, column=2, padx=p, pady=p
         )
-        OptionMenu(self, self.var_base_column, *options.get()).grid(
+        Checkbutton(
+            self,
+            text="This correction factor adjusts wet-bulb\n& dry-Bulb as base columns together",
+            variable=self.var_wb_db
+        ).grid(
             row=1, column=2, sticky=EW, padx=p, pady=p
         )
+        self.var_wb_db.trace('w', self._wb_db_changed)
+        self.base_column_dropdown = OptionMenu(self, self.var_base_column, *options.get())
+        self.base_column_dropdown.grid(row=2, column=2, sticky=EW, padx=p, pady=p)
         Label(self, text="Data affected by this correction factor:").grid(
-            row=2, column=2, padx=p, pady=p
+            row=3, column=2, padx=p, pady=p
         )
         columns_frame = Frame(self)
         self.columns_listbox = Listbox(columns_frame, height=5, listvariable=options, selectmode=MULTIPLE)
@@ -105,8 +110,14 @@ class CorrectionSummaryWidget(LabelFrame):
         self.columns_listbox.config(yscrollcommand=columns_scroll.set)
         columns_scroll.config(command=self.columns_listbox.yview)
         columns_frame.grid(
-            row=3, column=2, sticky=EW, padx=p, pady=p
+            row=4, column=2, sticky=EW, padx=p, pady=p
         )
+
+    def _wb_db_changed(self, *_):
+        if self.var_wb_db.get():
+            self.base_column_dropdown['state'] = DISABLED
+        else:
+            self.base_column_dropdown['state'] = ACTIVE
 
     def _remove(self):
         self.remove_me = True

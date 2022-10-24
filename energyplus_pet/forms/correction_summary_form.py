@@ -146,7 +146,9 @@ If you have any correction factors, add them here, otherwise, press done to cont
             f.grid(row=i, column=0, sticky=EW, padx=3, pady=3)
 
     def _add_factor_widget(self):
-        name = simpledialog.askstring("Correction Factor Name", "Give this correction factor a name", parent=self)
+        name = simpledialog.askstring(
+            "Correction Factor Name", "Give this correction factor a name", initialvalue="CorrFactorName", parent=self
+        )
         if name is None:
             return
         name = name.lower()
