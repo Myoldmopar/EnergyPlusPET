@@ -40,8 +40,9 @@ class CatalogDataPlotForm(Toplevel):
             line_unit_type = eq.headers().unit_array()[col_num]
             dummy_unit_instance = unit_instance_factory(0.0, line_unit_type)
             line_unit_string = dummy_unit_instance.get_unit_string_map()[dummy_unit_instance.calculation_unit_id()]
-            data_vector = [row[col_num] for row in cdm.final_data_matrix]
-            x_values = list(range(len(data_vector)))  # TODO: Allow optional x_values to be passed in
+            data_vector = [_row[col_num] for _row in cdm.final_data_matrix]
+            # could allow x_values to be passed in if we want a specific plot shape
+            x_values = list(range(len(data_vector)))
             plot_data.append(
                 (line_title, x_values, data_vector, line_unit_string)
             )
@@ -94,10 +95,10 @@ if __name__ == "__main__":
     d = []
     for i in range(3):
         row = []
-        for j in range(7):
+        for j in range(8):
             row.append(randint(1, 10))
         d.append(row)
     _cdm.add_base_data(d)
-    _cdm.apply_correction_factors(3)
+    _cdm.apply_correction_factors(3, -1, -1)
     start = CatalogDataPlotForm(window, _cdm, WaterToAirHeatPumpCoolingCurveFit())
     window.mainloop()

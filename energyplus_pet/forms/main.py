@@ -177,8 +177,6 @@ class EnergyPlusPetWindow(Tk):
         # self._tree.insert(
         #     parent=branch_con_pump, index='end', text='Non-Dimensional', tags=ETString.Pump_ConstSpeed_ND
         # )
-        # COMPONENT_EXTENSION: Add more nodes to the treeview based on the type added
-        # TODO: Find all extension spots and number them like in the old codebase
         self._tree.pack(side=LEFT, padx=3, pady=3, fill=BOTH, expand=True)
         equip_type_scrollbar.pack(side=RIGHT, padx=0, pady=3, fill=Y, expand=False)
         self._tree.focus(self.init)
@@ -265,7 +263,6 @@ class EnergyPlusPetWindow(Tk):
 
     def _help_documentation(self):
         """Launches a browser to open the latest documentation"""
-        # TODO: Should we find the current version and put it in the URL?
         browser_open('https://energypluspet.readthedocs.io/en/latest/')
         self._update_status_bar('Launched online documentation')
 
@@ -327,10 +324,13 @@ class EnergyPlusPetWindow(Tk):
         potential_new_equip_type = ETString.get_equip_type_from_unique_string(node_tag)
         if not self._catalog_data_manager.data_processed:
             # then we are just selecting a new equip type, select it and move on
-            self._equip_instance = EquipmentFactory.instance_factory(potential_new_equip_type)
-            if self._equip_instance is None:
+            potential_equip = EquipmentFactory.instance_factory(potential_new_equip_type)
+            if potential_equip is None:
                 messagebox.showwarning("Not Implemented Yet", "This type has not been implemented yet, sorry!")
                 return
+            self._equip_instance = potential_equip
+            self._catalog_data_manager.reset()
+            self._tk_var_progress.set(0)
             self._update_status_bar("New Equipment Type Selected")
             self._refresh_gui_state()
             return

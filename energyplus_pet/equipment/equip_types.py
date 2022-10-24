@@ -1,8 +1,6 @@
 from enum import Enum, auto
 
 
-# TODO: Can we get rid of EquipType and just use string IDs?  I know it's string comparison, but this isn't very DRY
-
 class EquipType(Enum):
     """Enumeration class of all known equipment types"""
     InvalidType = auto()  # used to return an invalid selection wherever needed

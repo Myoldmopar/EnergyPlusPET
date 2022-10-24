@@ -48,7 +48,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         column_units = eq.headers().unit_array()
         self.table = Sheet(tabular_frame)
         pretend_data = []
-        # TODO: Can we just tag a column with a dict of extra data rather than separate lists?
+        # Would be nice to create a struct of extra data and tag each column with it rather than separate lists
         self.columnar_unit_types = []
         self.columnar_unit_type_classes = []
         self.columnar_unit_id_to_string_mapping = []  # keep this for convenience

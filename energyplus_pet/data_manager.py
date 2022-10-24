@@ -98,6 +98,5 @@ class CatalogDataManager:
         self._correction_factors.clear()
         self.data_processed = False
         self._base_data = []
-        self.constant_parameters: Dict[str, BaseValueWithUnit]
         self.final_data_matrix: List[List[float]] = []
         self.last_error_message = ""

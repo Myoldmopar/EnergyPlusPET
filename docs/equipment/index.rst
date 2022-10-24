@@ -14,3 +14,5 @@ Talk about the equipment stuff here.
    common_curves
    wahp_heating_curve
    wahp_cooling_curve
+   wwhp_heating_curve
+   wwhp_cooling_curve

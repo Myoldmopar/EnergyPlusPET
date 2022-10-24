@@ -9,8 +9,14 @@ class TestDataManager(TestCase):
 
     def test_reset(self):
         cdm = CatalogDataManager()
-        # TODO: Add stuff to cdm here and check assertions before and after reset()
+        cf = CorrectionFactor('foo')
+        cf.num_corrections = 0
+        cdm.add_correction_factor(cf)
+        cdm.add_base_data([[]])
+        cdm.apply_correction_factors(0, -1, -1)
+        self.assertTrue(cdm.data_processed)
         cdm.reset()
+        self.assertFalse(cdm.data_processed)
 
     def test_empty_base_data(self):
         cdm = CatalogDataManager()
