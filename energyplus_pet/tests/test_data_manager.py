@@ -24,7 +24,18 @@ class TestDataManager(TestCase):
         # cdm.add_correction_factor(cf)
         # cdm.add_base_data([])
         status = cdm.apply_correction_factors(0, -1, -1)
-        self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
+        self.assertEqual(status, CatalogDataManager.ProcessResult.ERROR)
+        cdm.reset()
+
+    def test_final_data_with_fixed_column(self):
+        cdm = CatalogDataManager()
+        cdm.add_base_data([
+            [0, 1, 2, 3],
+            [0, 2, 3, 4],
+            [0, 3, 4, 5]
+        ])
+        status = cdm.apply_correction_factors(3, -1, -1)
+        self.assertEqual(status, CatalogDataManager.ProcessResult.ERROR)
         cdm.reset()
 
     def test_process_some_base_data(self):
@@ -55,9 +66,10 @@ class TestDataManager(TestCase):
         cf.num_corrections = 1
         cf.base_column_index = 0
         cf.base_correction = [2.0]
-        cf.columns_to_modify = [1, 3]
+        cf.columns_to_modify = [1, 2, 3]
         cf.mod_correction_data_column_map = {
             1: [0.5],  # column 1 should be halved (zero index)
+            2: [5.0],  # column 2 should be five-d
             3: [2.0]  # column 3 should be doubled
         }
         cdm.add_correction_factor(cf)
@@ -69,7 +81,7 @@ class TestDataManager(TestCase):
         self.assertEqual(
             [
                 [1.0, 2.0, 3.0, 4.0],
-                [2.0, 1.0, 3.0, 8.0]  # cf added row
+                [2.0, 1.0, 15.0, 8.0]  # cf added row
             ],
             cdm.final_data_matrix
         )

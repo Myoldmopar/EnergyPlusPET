@@ -87,6 +87,16 @@ class CatalogDataManager:
             self.last_error_message = f"Full catalog data set too small. \nData includes {len(self.final_data_matrix)} "
             self.last_error_message += f"rows, but this equipment requires at least {minimum_data_points}."
             return CatalogDataManager.ProcessResult.ERROR
+        else:
+            if len(self.final_data_matrix) == 0:
+                self.last_error_message = "Catalog data appears empty!  Abort!"
+                return CatalogDataManager.ProcessResult.ERROR
+            for column_index in range(len(self.final_data_matrix[0])):
+                this_column_data = [row[column_index] for row in self.final_data_matrix]
+                if len(set(this_column_data)) == 1:
+                    self.last_error_message = f"Problem with data, column #{column_index} (zero-based) is constant "
+                    self.last_error_message += "after factors have been applied.  Each column should contain variation!"
+                    return CatalogDataManager.ProcessResult.ERROR
         return CatalogDataManager.ProcessResult.OK
 
     def reset(self) -> None:
