@@ -1,7 +1,8 @@
 Correction Factor Details Form
 ==============================
 
-This will document the form, showing images and such as necessary, followed by code documentation below.
+The correction factor detail form is used to gather tabular input data for each correction factor.  The public methods
+are described here as needed.
 
 .. automodule:: energyplus_pet.forms.correction_detail_form
     :members:

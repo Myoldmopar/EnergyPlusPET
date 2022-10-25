@@ -32,6 +32,7 @@ class CatalogDataManager:
         """
         self._correction_factors.append(cf)
 
+    # TODO: I think a nicer interface here would be add_base_data_column(column_id), and each equip defines column ids
     def add_base_data(self, data: List[List[float]]) -> None:
         """
         Add base data as a list of data point rows, so the array lookup should be data[row][column].

@@ -1,7 +1,8 @@
-EnergyPlus PET Equipment Documentation
-======================================
+Equipment Documentation
+=======================
 
-Talk about the equipment stuff here.
+Descriptions of equipment classes will be put here soon!
+(Imagine a silly gif of a construction worker from 1998)
 
 .. toctree::
    :maxdepth: 2

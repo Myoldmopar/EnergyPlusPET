@@ -1,7 +1,8 @@
 Basic Message Dialog
 ====================
 
-This will document the form, showing images and such as necessary, followed by code documentation below.
+The basic message dialog is a simple dialog to display information to the user.  The built-in Tk dialogs had some
+oddities, and so a lightweight dialog class is worth having to keep things looking consistent.
 
 .. automodule:: energyplus_pet.forms.basic_message_form
     :members:

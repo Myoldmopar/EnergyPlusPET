@@ -1,7 +1,8 @@
 Catalog Plot Form
 =================
 
-This will document the form, showing images and such as necessary, followed by code documentation below.
+The catalog plot form is used to display the fully fleshed out catalog data set to the user for inspection prior
+to attempting the parameter estimation process.  Public methods are primarily related to checking exit status.
 
 .. automodule:: energyplus_pet.forms.catalog_plot
     :members:

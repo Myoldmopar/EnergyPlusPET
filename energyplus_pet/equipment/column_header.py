@@ -49,7 +49,7 @@ class ColumnHeaderArray:
         """Returns a CSV summary of this set of column headers"""
         name_row = ','.join(self.name_array())
         unit_row = ','.join([str(u) for u in self.unit_array()])
-        return '\n'.join([name_row, unit_row])
+        return f"{name_row}\n{unit_row}"
 
     def get_db_column(self) -> int:
         """Returns a zero-based index of the air dry-bulb column in a set of headers"""

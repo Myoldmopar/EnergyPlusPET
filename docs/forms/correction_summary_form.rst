@@ -1,7 +1,8 @@
 Correction Factor Summary Form
 ==============================
 
-This will document the form, showing images and such as necessary, followed by code documentation below.
+The correction factor summary form provides an ExitCode subclass to check for different responses, and the module
+provides an Event class which is just a useful container for some string identifiers.
 
 .. automodule:: energyplus_pet.forms.correction_summary_form
     :members:

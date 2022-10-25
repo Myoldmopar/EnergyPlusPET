@@ -1,7 +1,7 @@
 Equipment Preview Form
 ======================
 
-This will document the form, showing images and such as necessary, followed by code documentation below.
+The equipment preview form contains no public methods, just a constructor!
 
 .. automodule:: energyplus_pet.forms.header_preview
     :members:
