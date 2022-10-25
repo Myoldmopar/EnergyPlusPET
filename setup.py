@@ -11,7 +11,7 @@ setup(
     version=VERSION,
     packages=['energyplus_pet', 'energyplus_pet.forms', 'energyplus_pet.equipment'],
     description="Parameter Estimation Tools for Generating EnergyPlus Inputs from Raw Performance Data",
-    package_data={"energyplus_pet.forms": ["*.png"]},
+    package_data={"energyplus_pet.forms": ["*.png", "*.ods"]},
     long_description=readme_contents,
     long_description_content_type='text/markdown',
     author='Edwin Lee',
