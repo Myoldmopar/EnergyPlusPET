@@ -1,5 +1,5 @@
-Column Header Definition
-========================
+Column Header Definition (Developer Info)
+=========================================
 
 This will document the module, showing images and such as necessary, followed by code documentation below.
 

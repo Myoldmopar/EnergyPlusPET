@@ -1,7 +1,9 @@
 Base Equipment Class
 ====================
 
-This will document the module, showing images and such as necessary, followed by code documentation below.
+The base equipment class is an interface, defining the required functions to be overridden
+by derived types.  Whenever a new equipment object is being created, it should inherit
+this class.
 
 .. automodule:: energyplus_pet.equipment.base
     :members:

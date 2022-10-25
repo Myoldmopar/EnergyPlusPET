@@ -1,5 +1,5 @@
-Equipment Type Manager
-======================
+Equipment Type Manager (Developer Info)
+=======================================
 
 This will document the module, showing images and such as necessary, followed by code documentation below.
 

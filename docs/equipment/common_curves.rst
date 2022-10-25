@@ -1,5 +1,5 @@
-Common Curves Collection
-========================
+Common Curves Collection (Developer Info)
+=========================================
 
 This will document the module, showing images and such as necessary, followed by code documentation below.
 
