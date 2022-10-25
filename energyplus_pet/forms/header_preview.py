@@ -28,7 +28,7 @@ class RequiredDataPreviewForm(Toplevel):
         Label(self, text="The equipment needs fixed parameters:").pack(side=TOP, fill=X, expand=False, padx=3, pady=3)
         constant_parameters = equipment.get_required_constant_parameters()
         param_summary = '\n'.join([f"{c.title} [{c.unit_type}]" for c in constant_parameters])
-        param_csv = f"ParameterName,UnitType\n"
+        param_csv = "ParameterName,UnitType\n"
         param_csv += '\n'.join([f"{c.title},{c.unit_type}" for c in constant_parameters])
         Label(self, text=param_summary).pack(side=TOP, fill=X, expand=True, padx=3, pady=3)
         self._summary = f"{equipment.name()}\n*Columnar data*\n{headers_summary}\n*Parameters*\n{param_summary}"
