@@ -1,21 +1,15 @@
 Adding a New Component Type
 ===========================
 
-New component types can be added by following a well-defined series of steps, search for these strings in the code:
+If you are ready to dive in and implement a new model type in this tool, here are the steps you should take!
 
-#. Add component string here, the index should match with the SenderType enumeration below
-#. Add component index here, should match with the names defined in EquipNames1 above
-#. Add unit type array and header string array here
-#. Return proper column header strings, they are defined below
-#. Return proper column unit array, they are defined below
-#. Return proper dry bulb column index, they are defined below
-#. Return proper wet bulb column index, they are defined below
-#. Add more nodes to the treeview based on the type added
-#. Create an instance of this interface, along with a component data structure
-#. Add data structure instances here
-#. Pass array of data to each component class structure here
-#. Generate a new detailed data form here
-#. Retrieve detailed data values here
-#. Instantiate proper threaded class and information
-#. Add more components here, passing in their data structures and setting the Me.Component object
+#. Identify the model to be implemented, along with identifying the independent and dependent variables
+#. Create a new skeleton derived class from an existing component type inside the ``equipment`` folder
+#. Generate example and test data, adding it to the ``examples/`` folder, mimicking the existing structures
+#. Add entries to the classes and functions inside ``equipment/equip_types.py``
+#. Add an entry to the factory method in ``equipment/manager.py``
+#. Fully flesh out the equipment derived class, mimicking patterns and examples in other equipment
+#. If there are model curve functions that can be reused by other classes, consider adding them to ``common_curves.py``
+#. Add branches and nodes to the main form in the ``_build_treeview`` function in ``forms/main.py``
 
+That's it!

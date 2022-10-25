@@ -11,12 +11,7 @@ PET as in Parameter Estimation Tool, not a friendly supporter that hangs around 
    equipment/index
    new_component_type
    new_unit_type
-   correction_factor
-   data_manager
-   exceptions
-   runner
-   units
-
+   support_classes
 
 Indices and tables
 ==================

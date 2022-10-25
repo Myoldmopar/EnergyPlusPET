@@ -1,11 +1,8 @@
 Adding a New Unit Type
 ===========================
 
-New unit types can be added by following a well-defined series of steps, search for these strings in the code:
+If you are interested in adding a new unit type (dimension) or a new unit for a given dimension, follow these steps:
 
-#. Need to add catch in here to report if a value is the calculation unit or not
-#. Set array holder here
-#. Return proper calculation unit
-#. Add in unit conversion capabilities
-#. Return Base IP unit
-#. Return Base SI unit
+#. For a new unit type, create a new entry in the ``UnitType`` enum in ``units.py``
+#. For a new unit type, create a new derived class that inherits ``BaseValueWithUnit``, mimicking patterns as needed
+#. For just a new unit within a given type, just add a new ID to the unit type class, and update the unit string/id/convert functions accordingly
