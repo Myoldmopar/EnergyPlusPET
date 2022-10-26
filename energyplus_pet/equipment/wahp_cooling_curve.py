@@ -261,21 +261,13 @@ Rated Source-side Volumetric Flow Rate: {self.rated_water_volume_flow}
             "minimum_value_of_y": -100, "maximum_value_of_y": 100,
             "minimum_value_of_z": -100, "maximum_value_of_z": 100,
         }
-        curves = {'TotalCapacityCurve': {
+        quad_curves = {'TotalCapacityCurve': {
             "coefficient1_constant": self.total_capacity_params[0],
             "coefficient2_w": self.total_capacity_params[1],
             "coefficient3_x": self.total_capacity_params[2],
             "coefficient4_y": self.total_capacity_params[3],
             "coefficient5_z": self.total_capacity_params[4],
             **reused_limits_four
-        }, 'SensibleCapacityCurve': {
-            "coefficient1_constant": self.sensible_capacity_params[0],
-            "coefficient2_v": self.sensible_capacity_params[1],
-            "coefficient3_w": self.sensible_capacity_params[2],
-            "coefficient4_x": self.sensible_capacity_params[3],
-            "coefficient5_y": self.sensible_capacity_params[4],
-            "coefficient5_z": self.sensible_capacity_params[5],
-            **reused_limits_five
         }, 'CoolingPowerCurve': {
             "coefficient1_constant": self.cooling_power_params[0],
             "coefficient2_w": self.cooling_power_params[1],
@@ -284,11 +276,21 @@ Rated Source-side Volumetric Flow Rate: {self.rated_water_volume_flow}
             "coefficient5_z": self.cooling_power_params[4],
             **reused_limits_four
         }}
+        quint_curves = {'SensibleCapacityCurve': {
+            "coefficient1_constant": self.sensible_capacity_params[0],
+            "coefficient2_v": self.sensible_capacity_params[1],
+            "coefficient3_w": self.sensible_capacity_params[2],
+            "coefficient4_x": self.sensible_capacity_params[3],
+            "coefficient5_y": self.sensible_capacity_params[4],
+            "coefficient5_z": self.sensible_capacity_params[5],
+            **reused_limits_five
+        }}
 
         epjson_object = {
             **BaseEquipment.current_eplus_version_object_epjson(),
             'Coil:Cooling:WaterToAirHeatPump:EquationFit': coil_object,
-            'Curve:QuadLinear': curves
+            'Curve:QuadLinear': quad_curves,
+            'Curve:QuintLinear': quint_curves
         }
         return dumps(epjson_object, indent=2)
 

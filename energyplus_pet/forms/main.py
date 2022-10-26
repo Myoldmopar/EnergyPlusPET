@@ -265,8 +265,9 @@ class EnergyPlusPetWindow(Tk):
                 self._button_save_data['state'] = DISABLED
 
     def _help_documentation(self):
-        """Launches a browser to open the latest documentation"""
-        browser_open('https://energypluspet.readthedocs.io/en/latest/')
+        """Launches a browser to open the stable documentation"""
+        # could try to use the current version docs but that may be a bit finicky
+        browser_open('https://energypluspet.readthedocs.io/en/stable/')
         self._update_status_bar('Launched online documentation')
 
     @staticmethod
