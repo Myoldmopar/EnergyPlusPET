@@ -46,9 +46,12 @@ Installation
 
 This program should be installed from PyPi using ``pip install energyplus_pet``.
 Once installed, a new command will be available from that Python environment called ``energyplus_pet_gui``, with a
-``.exe`` appended on Windows.  A future version of this tool will add an optional process to make it available from
-a desktop icon.  In the meantime, you are welcome to create a desktop link manually on the operating system of your
-choice.
+``.exe`` appended on Windows.  Run this one time right from the command line where ``pip`` was executed to launch the
+program.  For easier access, there is an option in the top menu that allows creating a desktop icon.  After that is
+performed, the user can just launch the program right from the desktop icon.
+
+To get updates to the program, you simply need to install the latest version using the same ``pip`` version, but let
+``pip`` know that it can upgrade existing package installations: ``pip install --upgrade energyplus_pet``
 
 Developing
 ----------

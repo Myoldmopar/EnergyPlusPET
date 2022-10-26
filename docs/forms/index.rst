@@ -27,7 +27,8 @@ The program begins with the main form:
 
 The form is laid out pretty simply, with a list of available component types in the left tree, a set of controls in
 the middle, and a set of output windows on the right.  The Help menu has options to open the online documentation in
-a browser, as well as opening the example data folder that is packaged with the tool.
+a browser, as well as opening the example data folder that is packaged with the tool.  A newer addition to the menu is
+also the capability to generate a shortcut icon on the system's desktop to make it very easy to launch the program.
 
 To continue to generate parameters, the first step is to select a valid equipment type entry in the left tree, and
 clicking the *Engage Equipment Type* button.  Clicking this with an invalid entry in the tree will emit a dialog.
