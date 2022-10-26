@@ -288,6 +288,7 @@ class EnergyPlusPetWindow(Tk):
             check_call(["xdg-open", examples_dir])
         elif system() == 'Windows':
             from os import startfile
+            print(examples_dir)
             startfile(examples_dir)
 
     def _preview_data(self):
