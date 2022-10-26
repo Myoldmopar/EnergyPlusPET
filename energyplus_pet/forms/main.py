@@ -14,6 +14,8 @@ from tkinter import messagebox, filedialog  # simple dialogs for user messages
 from tkinter.ttk import LabelFrame, Progressbar, Treeview, Separator, Notebook  # ttk widgets
 from webbrowser import open as browser_open
 
+from pyshortcuts import make_shortcut
+
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.forms.correction_detail_form import DetailedCorrectionFactorForm
 from energyplus_pet.data_manager import CatalogDataManager
@@ -149,6 +151,7 @@ class EnergyPlusPetWindow(Tk):
         menu_help = Menu(menubar, tearoff=0)
         menu_help.add_command(label="Open online documentation...", command=self._help_documentation)
         menu_help.add_command(label="Open examples folder...", command=self._open_examples)
+        menu_help.add_command(label="Create desktop icon", command=self._create_shortcut)
         menu_help.add_command(label="About...", command=self._help_about)
         menubar.add_cascade(label="Help", menu=menu_help)
         self.config(menu=menubar)
@@ -269,6 +272,11 @@ class EnergyPlusPetWindow(Tk):
         # could try to use the current version docs but that may be a bit finicky
         browser_open('https://energypluspet.readthedocs.io/en/stable/')
         self._update_status_bar('Launched online documentation')
+
+    def _create_shortcut(self):
+        runner_script = str(Path(__file__).resolve().parent.parent / 'runner.py')
+        icon_path = str(Path(__file__).resolve().parent / 'favicon.png')
+        make_shortcut(runner_script, name=self._program_name, icon=icon_path)
 
     @staticmethod
     def _open_examples():
