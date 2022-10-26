@@ -98,7 +98,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.set_all_cell_sizes_to_text(redraw=True)
         self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
         self.table.extra_bindings("end_paste", func=self._cells_pasted)
-        # TODO: Handle undo here
+        # Undo events in the table could bypass our bindings, need to verify this
         self.table.select_cell(row=1, column=0)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         self.table.focus()

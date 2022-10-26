@@ -1,6 +1,6 @@
 from tkinter import Button, Frame, Label, LabelFrame, TOP, Spinbox, IntVar, Scrollbar, LEFT, BOTH, RIGHT, EW, \
     VERTICAL, Radiobutton, StringVar, W, NS, OptionMenu, MULTIPLE, Listbox, Variable, BooleanVar, \
-    ACTIVE, DISABLED, HORIZONTAL
+    ACTIVE, DISABLED, HORIZONTAL, TclError
 from tkinter.ttk import Separator
 from typing import Callable
 
@@ -37,7 +37,10 @@ class CorrectionSummaryWidget(LabelFrame):
         self._setup_removal_callback(remove_callback)
 
     def _update_from_traces(self, *_):  # pragma: no cover
-        self.cf.num_corrections = self.var_num_corrections.get()
+        try:
+            self.cf.num_corrections = self.var_num_corrections.get()
+        except TclError:
+            self.cf.num_corrections = 0  # if blank, set to zero for now
         if self.var_mod_type.get() == CorrectionFactorType.Multiplier.name:
             self.cf.correction_type = CorrectionFactorType.Multiplier
         elif self.var_mod_type.get() == CorrectionFactorType.Replacement.name:
@@ -68,7 +71,7 @@ class CorrectionSummaryWidget(LabelFrame):
         Label(corr_frame, text="# Correction Values").grid(
             row=0, column=0, padx=p, pady=p
         )
-        Spinbox(corr_frame, from_=2, to=15, width=4, textvariable=self.var_num_corrections).grid(
+        Spinbox(corr_frame, from_=1, to=99, width=4, textvariable=self.var_num_corrections).grid(
             row=0, column=1, padx=p, pady=p
         )
         corr_frame.grid(
