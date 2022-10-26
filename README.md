@@ -15,7 +15,7 @@ Code coverage is exercised purely on Ubuntu and pushed to coveralls, available [
 
 [![Documentation Status](https://readthedocs.org/projects/energypluspet/badge/?version=stable)](https://energypluspet.readthedocs.io/en/stable/)
 
-Docs are built on ReadTheDocs and hosted [here](https://energypluspet.readthedocs.io/en/latest/).
+Docs are built on ReadTheDocs and hosted [here](https://energypluspet.readthedocs.io/en/stable/).
 
 ## Releases
 
