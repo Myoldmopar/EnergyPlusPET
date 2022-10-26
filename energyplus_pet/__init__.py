@@ -1,2 +1,2 @@
 NICE_NAME = "EnergyPlus P.E.T."
-VERSION = "0.40"
+VERSION = "0.41"

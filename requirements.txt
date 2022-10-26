@@ -17,4 +17,7 @@ sphinx_rtd_theme
 # for running tests
 nose
 coverage
-coveralls  # really just for github, but its fine
+coveralls  # really just for github, but it's fine
+
+# for building wheels, mostly from github, but it's fine
+wheel
