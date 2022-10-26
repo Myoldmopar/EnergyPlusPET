@@ -276,7 +276,7 @@ class EnergyPlusPetWindow(Tk):
     def _create_shortcut(self):
         runner_script = str(Path(__file__).resolve().parent.parent / 'runner.py')
         icon_path = str(Path(__file__).resolve().parent / 'favicon.png')
-        make_shortcut(runner_script, name=self._program_name, icon=icon_path)
+        make_shortcut(runner_script, name=self._program_name, terminal=False, icon=icon_path)
 
     @staticmethod
     def _open_examples():
