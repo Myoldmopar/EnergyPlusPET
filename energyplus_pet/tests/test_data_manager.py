@@ -86,6 +86,32 @@ class TestDataManager(TestCase):
             cdm.final_data_matrix
         )
 
+    def test_process_with_wb_db_factor(self):
+        cdm = CatalogDataManager()
+        cf = CorrectionFactor('db_wb')
+        cf.correction_type = CorrectionFactorType.CombinedDbWb
+        cf.num_corrections = 1
+        cf.base_correction_db = [2.0]
+        cf.base_correction_wb = [3.0]
+        cf.columns_to_modify = [2, 3]
+        cf.mod_correction_data_column_map = {
+            2: [5.0],  # column 2 should be five-d
+            3: [2.0]  # column 3 should be doubled
+        }
+        cdm.add_correction_factor(cf)
+        cdm.add_base_data([
+            [1.0, 2.0, 3.0, 4.0]
+        ])
+        status = cdm.apply_correction_factors(0, 0, 1)
+        self.assertEqual(status, CatalogDataManager.ProcessResult.OK)
+        self.assertEqual(
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [2.0, 3.0, 15.0, 8.0]  # cf added row
+            ],
+            cdm.final_data_matrix
+        )
+
     def test_lots_of_correction_factors(self):
         cdm = CatalogDataManager()
 

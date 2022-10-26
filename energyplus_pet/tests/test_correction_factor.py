@@ -64,4 +64,20 @@ class TestCorrectionFactor(TestCase):
         # now test it is all good!
         cf.mod_correction_data_column_map = {1: [1.1], 2: [3.1]}
         self.assertTrue(cf.check_ok(db_column_index, wb_column_index))
-        # TODO: thoroughly test db/wb type
+
+        # now check the wb/db specific stuff, first it is fine
+        cf.correction_type = CorrectionFactorType.CombinedDbWb
+        cf.base_correction_db = [1]
+        cf.base_correction_wb = [2]
+        cf.columns_to_modify = [3, 4]
+        cf.mod_correction_data_column_map = {3: [1.1], 4: [3.1]}
+        self.assertTrue(cf.check_ok(0, 1))
+        # now if wb is in the columns to modify
+        self.assertFalse(cf.check_ok(0, 3))
+        # then if db is in the columns to modify
+        self.assertFalse(cf.check_ok(3, 1))
+        # and now if the lengths of the wb and db data don't match num_corrections
+        cf.base_correction_wb = [2, 1]
+        self.assertFalse(cf.check_ok(0, 1))
+        cf.base_correction_db = [2, 1]
+        self.assertFalse(cf.check_ok(0, 1))
