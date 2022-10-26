@@ -287,7 +287,8 @@ class EnergyPlusPetWindow(Tk):
         elif system() == 'Linux':
             check_call(["xdg-open", examples_dir])
         elif system() == 'Windows':
-            check_call(["explorer", "/open", examples_dir])
+            from os import startfile
+            startfile(examples_dir)
 
     def _preview_data(self):
         """Allows the user to preview the data for the selected equipment, button is disabled until an equip is set."""
