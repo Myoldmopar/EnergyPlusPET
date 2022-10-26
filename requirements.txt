@@ -17,3 +17,4 @@ sphinx_rtd_theme
 # for running tests
 nose
 coverage
+coveralls  # really just for github, but its fine
