@@ -3,6 +3,7 @@ from json import dumps
 from pathlib import Path
 from queue import Queue
 from subprocess import check_call
+from sys import executable
 from threading import Thread
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y  # widget sides and directions to use in widget.pack commands
 from tkinter import END  # key used when adding data to the scrolledText object
@@ -275,8 +276,8 @@ class EnergyPlusPetWindow(Tk):
 
     def _create_shortcut(self):
         runner_script = str(Path(__file__).resolve().parent.parent / 'runner.py')
-        icon_path = str(Path(__file__).resolve().parent / 'favicon.png')
-        make_shortcut(runner_script, name=self._program_name, terminal=False, icon=icon_path)
+        icon_path = str(Path(__file__).resolve().parent / 'favicon.ico')
+        make_shortcut(runner_script, name=self._program_name, terminal=False, icon=icon_path, executable=executable)
 
     @staticmethod
     def _open_examples():
