@@ -3,6 +3,7 @@ from json import dumps
 from pathlib import Path
 from queue import Queue
 from subprocess import check_call
+from sys import executable
 from threading import Thread
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y  # widget sides and directions to use in widget.pack commands
 from tkinter import END  # key used when adding data to the scrolledText object
@@ -13,6 +14,8 @@ from tkinter import Tk, Button, Frame, Label, PhotoImage, scrolledtext, Scrollba
 from tkinter import messagebox, filedialog  # simple dialogs for user messages
 from tkinter.ttk import LabelFrame, Progressbar, Treeview, Separator, Notebook  # ttk widgets
 from webbrowser import open as browser_open
+
+from pyshortcuts import make_shortcut
 
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.forms.correction_detail_form import DetailedCorrectionFactorForm
@@ -149,6 +152,7 @@ class EnergyPlusPetWindow(Tk):
         menu_help = Menu(menubar, tearoff=0)
         menu_help.add_command(label="Open online documentation...", command=self._help_documentation)
         menu_help.add_command(label="Open examples folder...", command=self._open_examples)
+        menu_help.add_command(label="Create desktop icon", command=self._create_shortcut)
         menu_help.add_command(label="About...", command=self._help_about)
         menubar.add_cascade(label="Help", menu=menu_help)
         self.config(menu=menubar)
@@ -270,6 +274,15 @@ class EnergyPlusPetWindow(Tk):
         browser_open('https://energypluspet.readthedocs.io/en/stable/')
         self._update_status_bar('Launched online documentation')
 
+    def _create_shortcut(self):
+        runner_script = str(Path(__file__).resolve().parent.parent / 'runner.py')
+        icon_extension = 'ico' if system() == 'Windows' else 'png'
+        icon_path = str(Path(__file__).resolve().parent / f"favicon.{icon_extension}")
+        make_shortcut(
+            runner_script, name=self._program_name, terminal=False, icon=icon_path,
+            executable=executable, startmenu=False
+        )
+
     @staticmethod
     def _open_examples():
         examples_dir = str(Path(__file__).resolve().parent.parent / 'examples')
@@ -278,7 +291,8 @@ class EnergyPlusPetWindow(Tk):
         elif system() == 'Linux':
             check_call(["xdg-open", examples_dir])
         elif system() == 'Windows':
-            check_call(["explorer", "/open", examples_dir])
+            from os import startfile
+            startfile(examples_dir)
 
     def _preview_data(self):
         """Allows the user to preview the data for the selected equipment, button is disabled until an equip is set."""

@@ -9,6 +9,7 @@ numpy
 scipy
 pyperclip
 tksheet
+pyshortcuts
 
 # for building documentation
 sphinx
