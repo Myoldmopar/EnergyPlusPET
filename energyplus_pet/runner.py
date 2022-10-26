@@ -2,8 +2,7 @@ from energyplus_pet.forms.main import EnergyPlusPetWindow
 
 
 def main_gui():
-    e = EnergyPlusPetWindow()
-    e.run()
+    EnergyPlusPetWindow().run()
 
 
 if __name__ == "__main__":

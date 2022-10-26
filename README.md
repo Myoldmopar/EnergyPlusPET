@@ -21,6 +21,6 @@ Docs are built on ReadTheDocs and hosted [here](https://energypluspet.readthedoc
 
 [![PyPIRelease](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/release.yml/badge.svg)](https://github.com/Myoldmopar/EnergyPlusPET/actions/workflows/release.yml)
 
-When a release is tagged, a GitHub Action workflow will create a Python wheel and upload it to the TestPyPi server.
+When a release is tagged, a GitHub Action workflow will create a Python wheel and upload it to the PyPi server.
 
-To install into an existing Python environment, execute `pip install -i https://test.pypi.org/simple/ energyplus_pet`
+To install into an existing Python environment, execute `pip install energyplus_pet`

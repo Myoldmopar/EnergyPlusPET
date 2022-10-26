@@ -10,7 +10,7 @@ jobs:
   unit_tests:
     strategy:
       matrix:
-        os: [ windows-latest, macos-11, macos-12, ubuntu-20.04, ubuntu-22.04 ]
+        os: [ windows-latest, macos-11, ubuntu-20.04, ubuntu-22.04 ]  # macos-12 is not playing well with Tk
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8  # v2
@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: 3.8
       - name: Install Pip Dependencies
-        run: pip install nose coverage coveralls
+        run: pip install -r requirements.txt
       - name: Run Tests
         run: nosetests
       - name: Coveralls
