@@ -34,7 +34,7 @@ from energyplus_pet.forms.base_data_form import MainDataForm
 class EnergyPlusPetWindow(Tk):
     """This form is the primary GUI entry point for the program; all control runs through here"""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """
         The main window of the parameter estimation tool GUI workflow.
         This window is an instance of a tk.Tk object
