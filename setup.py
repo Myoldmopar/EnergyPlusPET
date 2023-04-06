@@ -7,7 +7,7 @@ from energyplus_pet import VERSION
 readme_file = pathlib.Path(__file__).parent.resolve() / 'README.md'
 readme_contents = readme_file.read_text()
 
-install_requires = ['pyperclip', 'tksheet', 'matplotlib', 'numpy', 'scipy']
+install_requires = ['pyperclip', 'tksheet', 'matplotlib', 'numpy', 'scipy', 'PLAN-Tools>=0.5']
 if system() == 'Windows':
     install_requires.append('pypiwin32')
 
