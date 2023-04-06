@@ -67,10 +67,6 @@ class EnergyPlusPetWindow(Tk):
                 print(f"Could not set icon for Windows, expecting to find it at {self.icon_path}")
         fixup_taskbar_icon_on_windows(NICE_NAME)
 
-        icon_path = Path(__file__).parent / 'favicon.png'
-        image = PhotoImage(file=str(icon_path))
-        self.iconphoto(True, image)
-
         # setup event listeners
         self._gui_queue = Queue()
         self._check_queue()
