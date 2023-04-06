@@ -16,7 +16,7 @@ from webbrowser import open as browser_open
 
 from plan_tools.runtime import fixup_taskbar_icon_on_windows
 
-from energyplus_pet import NICE_NAME, VERSION
+from energyplus_pet import NAME, NICE_NAME, VERSION
 from energyplus_pet.forms.correction_detail_form import DetailedCorrectionFactorForm
 from energyplus_pet.data_manager import CatalogDataManager
 from energyplus_pet.equipment.base import BaseEquipment
@@ -38,7 +38,7 @@ class EnergyPlusPetWindow(Tk):
         The main window of the parameter estimation tool GUI workflow.
         This window is an instance of a tk.Tk object
         """
-        super().__init__()
+        super().__init__(className=NAME)
 
         # set some basic program information like title and an icon
         self._program_name = NICE_NAME
