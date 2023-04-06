@@ -3,7 +3,6 @@ from json import dumps
 from pathlib import Path
 from queue import Queue
 from subprocess import check_call
-from sys import executable
 from threading import Thread
 from tkinter import BOTH, LEFT, RIGHT, TOP, BOTTOM, X, Y  # widget sides and directions to use in widget.pack commands
 from tkinter import END  # key used when adding data to the scrolledText object
@@ -15,7 +14,7 @@ from tkinter import messagebox, filedialog  # simple dialogs for user messages
 from tkinter.ttk import LabelFrame, Progressbar, Treeview, Separator, Notebook  # ttk widgets
 from webbrowser import open as browser_open
 
-from pyshortcuts import make_shortcut
+from plan_tools.runtime import fixup_taskbar_icon_on_windows
 
 from energyplus_pet import NICE_NAME, VERSION
 from energyplus_pet.forms.correction_detail_form import DetailedCorrectionFactorForm
@@ -45,6 +44,29 @@ class EnergyPlusPetWindow(Tk):
         self._program_name = NICE_NAME
         program_name_with_version = f"{self._program_name} {VERSION}"
         self.title(program_name_with_version)
+        # add the taskbar icon, but its having issues reading the png on Mac, not sure.
+        if system() == 'Darwin':
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.icns'
+            if self.icon_path.exists():
+                self.iconbitmap(str(self.icon_path))
+            else:
+                print(f"Could not set icon for Mac, expecting to find it at {self.icon_path}")
+        elif system() == 'Windows':
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.png'
+            img = PhotoImage(file=str(self.icon_path))
+            if self.icon_path.exists():
+                self.iconphoto(False, img)
+            else:
+                print(f"Could not set icon for Windows, expecting to find it at {self.icon_path}")
+        else:  # Linux
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.png'
+            img = PhotoImage(file=str(self.icon_path))
+            if self.icon_path.exists():
+                self.iconphoto(False, img)
+            else:
+                print(f"Could not set icon for Windows, expecting to find it at {self.icon_path}")
+        fixup_taskbar_icon_on_windows(NICE_NAME)
+
         icon_path = Path(__file__).parent / 'favicon.png'
         image = PhotoImage(file=str(icon_path))
         self.iconphoto(True, image)
@@ -152,7 +174,6 @@ class EnergyPlusPetWindow(Tk):
         menu_help = Menu(menubar, tearoff=0)
         menu_help.add_command(label="Open online documentation...", command=self._help_documentation)
         menu_help.add_command(label="Open examples folder...", command=self._open_examples)
-        menu_help.add_command(label="Create desktop icon", command=self._create_shortcut)
         menu_help.add_command(label="About...", command=self._help_about)
         menubar.add_cascade(label="Help", menu=menu_help)
         self.config(menu=menubar)
@@ -273,15 +294,6 @@ class EnergyPlusPetWindow(Tk):
         # could try to use the current version docs but that may be a bit finicky
         browser_open('https://energypluspet.readthedocs.io/en/stable/')
         self._update_status_bar('Launched online documentation')
-
-    def _create_shortcut(self):
-        runner_script = str(Path(__file__).resolve().parent.parent / 'runner.py')
-        icon_extension = 'ico' if system() == 'Windows' else 'png'
-        icon_path = str(Path(__file__).resolve().parent / f"favicon.{icon_extension}")
-        make_shortcut(
-            runner_script, name=self._program_name, terminal=False, icon=icon_path,
-            executable=executable, startmenu=False
-        )
 
     @staticmethod
     def _open_examples():

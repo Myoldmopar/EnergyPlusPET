@@ -9,7 +9,6 @@ numpy
 scipy
 pyperclip
 tksheet
-pyshortcuts
 
 # for building documentation
 sphinx
@@ -22,3 +21,6 @@ coveralls  # really just for github, but it's fine
 
 # for building wheels, mostly from github, but it's fine
 wheel
+
+# for polishing up the Pip install
+PLAN-Tools==0.5
