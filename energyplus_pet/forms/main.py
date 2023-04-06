@@ -46,20 +46,20 @@ class EnergyPlusPetWindow(Tk):
         self.title(program_name_with_version)
         # add the taskbar icon, but its having issues reading the png on Mac, not sure.
         if system() == 'Darwin':
-            self.icon_path = Path(__file__).resolve().parent / 'icons' / 'icon.icns'
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.icns'
             if self.icon_path.exists():
                 self.iconbitmap(str(self.icon_path))
             else:
                 print(f"Could not set icon for Mac, expecting to find it at {self.icon_path}")
         elif system() == 'Windows':
-            self.icon_path = Path(__file__).resolve().parent / 'icons' / 'icon.png'
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.png'
             img = PhotoImage(file=str(self.icon_path))
             if self.icon_path.exists():
                 self.iconphoto(False, img)
             else:
                 print(f"Could not set icon for Windows, expecting to find it at {self.icon_path}")
         else:  # Linux
-            self.icon_path = Path(__file__).resolve().parent / 'icons' / 'icon.png'
+            self.icon_path = Path(__file__).resolve().parent.parent / 'icons' / 'icon.png'
             img = PhotoImage(file=str(self.icon_path))
             if self.icon_path.exists():
                 self.iconphoto(False, img)

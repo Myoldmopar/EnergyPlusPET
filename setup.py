@@ -16,7 +16,7 @@ setup(
     version=VERSION,
     packages=['energyplus_pet', 'energyplus_pet.forms', 'energyplus_pet.equipment'],
     description="Parameter Estimation Tools for Generating EnergyPlus Inputs from Raw Performance Data",
-    package_data={"energyplus_pet": ["*.png", "*.ico", "*.icns", "examples/*.ods"]},
+    package_data={"energyplus_pet": ["icons/*.png", "icons/*.ico", "icons/*.icns", "examples/*.ods"]},
     include_package_data=True,
     long_description=readme_contents,
     long_description_content_type='text/markdown',
