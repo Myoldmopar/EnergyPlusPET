@@ -8,5 +8,3 @@ def configure_cli() -> None:
     nice_name = "EnergyPlus P.E.T."
     s = EntryPoint(source_dir, name, nice_name, description, name)
     s.run()
-
-configure_cli()
