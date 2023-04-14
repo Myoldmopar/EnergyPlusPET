@@ -9,6 +9,7 @@ numpy
 scipy
 pyperclip
 tksheet
+pillow>=8.0.0
 
 # for building documentation
 sphinx
