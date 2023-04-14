@@ -7,7 +7,7 @@ from energyplus_pet import VERSION
 readme_file = pathlib.Path(__file__).parent.resolve() / 'README.md'
 readme_contents = readme_file.read_text()
 
-install_requires = ['pyperclip', 'tksheet', 'matplotlib', 'numpy', 'scipy', 'PLAN-Tools>=0.5']
+install_requires = ['pyperclip', 'tksheet', 'matplotlib', 'numpy', 'scipy', 'PLAN-Tools>=0.5', 'pillow>=8.0.0']
 if system() == 'Windows':
     install_requires.append('pypiwin32')
 
@@ -20,13 +20,31 @@ setup(
     include_package_data=True,
     long_description=readme_contents,
     long_description_content_type='text/markdown',
-    author='Edwin Lee',
-    author_email='a@a.a',
+    author='Edwin Lee, for NREL, for United States Department of Energy',
     url='https://github.com/Myoldmopar/EnergyPlusPet',
-    license='UnlicensedForNow',
+    license='ModifiedBSD',
     install_requires=install_requires,
     entry_points={
         'gui_scripts': ['energyplus_pet_gui=energyplus_pet.runner:main_gui'],
         'console_scripts': ['energyplus_pet_configure=energyplus_pet.configure:configure_cli',]
-    }
+    },
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Science/Research',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Physics',
+        'Topic :: Utilities',
+    ],
+    platforms=[
+        'Linux (Tested on Ubuntu)', 'MacOSX', 'Windows'
+    ],
+    keywords=[
+        'energyplus_launch', 'ep_launch',
+        'EnergyPlus', 'eplus', 'Energy+',
+        'Building Simulation', 'Whole Building Energy Simulation',
+        'Heat Transfer', 'HVAC', 'Modeling',
+    ]
 )
