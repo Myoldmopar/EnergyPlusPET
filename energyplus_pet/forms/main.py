@@ -38,6 +38,7 @@ class EnergyPlusPetWindow(Tk):
         The main window of the parameter estimation tool GUI workflow.
         This window is an instance of a tk.Tk object
         """
+        fixup_taskbar_icon_on_windows(NICE_NAME)
         super().__init__(className=NAME)
 
         # set some basic program information like title and an icon
@@ -65,7 +66,6 @@ class EnergyPlusPetWindow(Tk):
                 self.iconphoto(False, img)
             else:
                 print(f"Could not set icon for Windows, expecting to find it at {self.icon_path}")
-        fixup_taskbar_icon_on_windows(NICE_NAME)
 
         # setup event listeners
         self._gui_queue = Queue()
