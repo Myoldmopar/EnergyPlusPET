@@ -71,7 +71,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         elif _cf.correction_type == CorrectionFactorType.Replacement:
             Label(self, text=f"""Entering correction data for ~~ {_cf.name} ~~
 
-This correction factor requires {_cf.num_corrections} replacement values for both dry and wet bulb temps.
+This correction factor requires {_cf.num_corrections} replacement values for the specified independent variable.
 
 The correction factor requires multiplier values for the following {len(_cf.columns_to_modify)} column(s):
 {dep_column_names}""").pack(side=TOP, fill=X, anchor=W, expand=False, padx=p, pady=p)
@@ -125,23 +125,21 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             column_titles.append(eq.headers().name_array()[mod_column])
         num_columns_in_table = len(column_titles)
         num_rows_in_table = self.completed_factor.num_corrections  # no need to add a header or anything here
-        pretend_data = []
-        for row in range(num_rows_in_table):
-            this_row = []
-            for col in range(num_columns_in_table):
-                this_row.append(0.0)
-            pretend_data.append(this_row)
         self._num_bad_cells = 0
-        self.table = Sheet(self.tabular_frame)
-        self.table.set_sheet_data(pretend_data)
-        self.table.headers(column_titles)
+        self.table = Sheet(
+            self.tabular_frame,
+            expand_sheet_if_paste_too_big=False,
+            startup_select=(1, 1, 1, 1, "cells"),
+            align="c",
+            header_align="c",
+            headers=column_titles,
+            data=[[0.0 for _ in range(num_columns_in_table)] for _ in range(num_rows_in_table)]
+        )
         self.table.enable_bindings()
-        self.table.set_options(expand_sheet_if_paste_too_big=False)
-        self.table.hide(canvas="row_index")
-        self.table.hide(canvas="top_left")
         self.table.set_all_cell_sizes_to_text(redraw=True)
         # https://github.com/ragardner/tksheet/blob/master/DOCUMENTATION.md#25-example-custom-right-click-and-text-editor-functionality
-        self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
+        self.table.edit_validation(self._cell_edited)
+        # self.table.extra_bindings([("end_edit_cell", self._cell_edited)])
         self.table.extra_bindings("end_paste", func=self._cells_pasted)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         self.table.select_cell(row=0, column=0)
@@ -173,6 +171,10 @@ The correction factor requires multiplier values for the following {len(_cf.colu
         # set up keybinding and flags
         self.bind('<Key>', self._handle_button_pressed)
 
+        self.table.focus()
+        self.table.see()
+        self.table.redraw()
+
         # finalize UI operations
         self.grab_set()
         self.transient(parent_window)
@@ -189,35 +191,38 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             self._cells_pasted()
 
     def _cell_edited(self, event):
-        row = event.row
-        column = event.column
-        # first check the current value to see if it was already bad -- it will be the old value in the cell
-        current_value = self.table.get_cell_data(row, column)
-        try:
-            float(current_value)
-            was_good = True
-        except ValueError:
-            was_good = False
-        try:
-            float(event.text)
-            self.table.highlight_cells(row, column, bg='white')
-            # if it was good already, and good now, we are done
-            # if it was bad, and now good, decrement the counter
-            if not was_good:
-                self._num_bad_cells -= 1
-        except ValueError:
-            self.table.highlight_cells(row, column, bg='pink')
-            # if it was bad already, and bad now, we are done
-            # if it was good, and now bad, increment the counter
-            if was_good:
-                self._num_bad_cells += 1
+        for (row, column), old_value in event.cells.table.items():
+            # first check the current value to see if it was already bad -- it will be the old value in the cell
+            try:
+                float(old_value)
+                was_good = True
+            except ValueError:
+                was_good = False
+            try:
+                float(event.value)
+                self.table.highlight_cells(row, column, bg='white')
+                # if it was good already, and good now, we are done
+                # if it was bad, and now good, decrement the counter
+                if not was_good:
+                    self._num_bad_cells -= 1
+            except KeyError:
+                attrs = ", ".join(event.keys())
+                print(f"Could not access value attribute on event.  Available attributes include: {attrs}")
+            except ValueError:
+                self.table.highlight_cells(row, column, bg='pink')
+                # if it was bad already, and bad now, we are done
+                # if it was good, and now bad, increment the counter
+                if was_good:
+                    self._num_bad_cells += 1
+        self.table.redraw()
+        return event.value
 
     def _cells_pasted(self, _=None):
         self._num_bad_cells = 0
         for row in range(self.table.total_rows()):
             for column in range(self.table.total_columns()):
                 try:
-                    float(self.table.get_cell_data(row, column))
+                    float(self.table.data[row][column])
                     self.table.highlight_cells(row, column, bg='white')
                 except ValueError:
                     self._num_bad_cells += 1
@@ -229,7 +234,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
     def any_blank_cells(self):
         for row in range(self.table.total_rows()):
             for col in range(self.table.total_columns()):
-                if self.table.get_cell_data(row, col) == '':
+                if self.table.data[row][col] == '':
                     return True
         return False
 
@@ -282,7 +287,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 return
             for r in range(self.table.total_rows()):
                 for c in range(self.table.total_columns()):
-                    value = self.table.get_cell_data(r, c)
+                    value = self.table.data[r][c]
                     if value == '':
                         message_window = PetMessageForm(
                             self,
@@ -295,15 +300,15 @@ The correction factor requires multiplier values for the following {len(_cf.colu
             # for regular correction factors, read the first column of data into the base correction of the CF
             if self.completed_factor.correction_type != CorrectionFactorType.CombinedDbWb:
                 self.completed_factor.base_correction = [
-                    float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
+                    float(self.table.data[row][0]) for row in range(self.completed_factor.num_corrections)
                 ]
                 last_column_read = 0
             else:  # for db/wb, read the first column into the db array and the second column into the wb array
                 self.completed_factor.base_correction_db = [
-                    float(self.table.get_cell_data(row, 0)) for row in range(self.completed_factor.num_corrections)
+                    float(self.table.data[row][0]) for row in range(self.completed_factor.num_corrections)
                 ]
                 self.completed_factor.base_correction_wb = [
-                    float(self.table.get_cell_data(row, 1)) for row in range(self.completed_factor.num_corrections)
+                    float(self.table.data[row][1]) for row in range(self.completed_factor.num_corrections)
                 ]
                 last_column_read = 1
             # then iterate over the mod column ids of the CF and read the data into lists and then into the CF map
@@ -311,7 +316,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 last_column_read += 1
                 this_column = []
                 for row in range(self.table.total_rows()):
-                    this_column.append(float(self.table.get_cell_data(row, last_column_read)))
+                    this_column.append(float(self.table.data[row][last_column_read]))
                 self.completed_factor.mod_correction_data_column_map[equipment_column_index] = this_column
             output_message = ""
             db = self.equipment_instance.headers().get_db_column()
@@ -343,7 +348,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 self.cancel()
                 return
             for r in range(self.table.total_rows()):
-                cell_value = float(self.table.get_cell_data(r, 0))
+                cell_value = float(self.table.data[r][0])
                 unit_value = unit_instance_factory(cell_value, self.replacement_column_unit_type)
                 unit_value.units = current_db_unit_id
                 unit_value.convert_to_calculation_unit()
@@ -359,7 +364,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 self.cancel()
                 return
             for r in range(self.table.total_rows()):
-                cell_value = float(self.table.get_cell_data(r, 0))
+                cell_value = float(self.table.data[r][0])
                 unit_value = unit_instance_factory(cell_value, UnitType.Temperature)
                 unit_value.units = current_db_unit_id
                 unit_value.convert_to_calculation_unit()
@@ -374,7 +379,7 @@ The correction factor requires multiplier values for the following {len(_cf.colu
                 self.cancel()
                 return
             for r in range(self.table.total_rows()):
-                cell_value = float(self.table.get_cell_data(r, 1))
+                cell_value = float(self.table.data[r][1])
                 unit_value = unit_instance_factory(cell_value, UnitType.Temperature)
                 unit_value.units = current_wb_unit_id
                 unit_value.convert_to_calculation_unit()
