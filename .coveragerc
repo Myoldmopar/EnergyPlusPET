@@ -4,4 +4,6 @@ source = energyplus_pet
 [report]
 omit =
     */energyplus_pet/forms/*
+    */energyplus_pet/__main__.py
     */energyplus_pet/runner.py
+    */energyplus_pet/configure.py
