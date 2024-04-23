@@ -1,3 +1,3 @@
 NAME = "energyplus_pet"
 NICE_NAME = "EnergyPlus P.E.T."
-VERSION = "0.61"
+VERSION = "0.62"

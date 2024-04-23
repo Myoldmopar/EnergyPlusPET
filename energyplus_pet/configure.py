@@ -8,3 +8,7 @@ def configure_cli() -> None:
     description = "An EnergyPlus Parameter Estimation Tool"
     s = EntryPoint(source_dir, name, NICE_NAME, description, NAME)
     s.run()
+
+
+if __name__ == "__main__":
+    configure_cli()
