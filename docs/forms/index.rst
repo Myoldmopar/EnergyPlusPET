@@ -102,9 +102,8 @@ Once the correction factor data is completed, the next step is entering the main
 This form is quite busy, and rightfully so, as this where the user pastes in the majority of the input data.
 The most ideal workflow here is to have the data prepared in the right columns in a spreadsheet.  If that is the
 situation, then the user can simply copy the full table data, select the top left cell in this form, and ctrl-v to
-paste it right in.  Nice.  If not, the user can enter the data however needed.  For manual entry, there are buttons on
-the form to add more rows, and once complete, if there are extra rows, there is a button to shrink the table down and
-eliminate blank rows.
+paste it right in.  Nice.  If not, the user can enter the data however needed.  For manual entry, you should be able
+to use right-click menus on the table to add/remove rows.  Make sure the table is fully filled out before continuing.
 
 The data coming from a catalog will likely be in a mixed set of units.  For convenience there are buttons
 to quickly set the unit headers to IP or SI typical units.  Regardless of how the units are set, the user should take
