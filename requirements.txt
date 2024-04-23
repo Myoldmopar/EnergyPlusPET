@@ -5,9 +5,7 @@
 # so here we are with matplotlib.  And once we have matplotlib, we already get numpy, so there's no reason to not
 # use numpy for arrays.  If I can ever find a really lightweight plot libraries, I'll try to remove matplotlib and numpy
 matplotlib
-numpy
 scipy
-pyperclip
 tksheet==7.1.8
 pillow>=8.0.0
 

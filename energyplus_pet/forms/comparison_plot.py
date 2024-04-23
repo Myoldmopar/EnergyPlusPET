@@ -1,6 +1,5 @@
 from enum import auto, Enum
 
-import numpy as np
 from tkinter import Frame, Toplevel, TOP, BOTH, Tk, Label, X, Button
 from tkinter.ttk import Notebook, Separator
 
@@ -61,7 +60,7 @@ class ComparisonPlot(Toplevel):
                     line_arg = '--'
                 else:
                     raise EnergyPlusPetException('bad line type')
-                a.plot(np.array(pd[3]), label=pd[0], linestyle=line_arg, color=pd[2])
+                a.plot(pd[3], label=pd[0], linestyle=line_arg, color=pd[2])
             a.legend()
             a.set_title(plot_title, fontsize=16)
             a.set_xlabel("Catalog Data Points (no order)")

@@ -1,7 +1,7 @@
 from abc import abstractmethod
+from math import sqrt
 from typing import Callable, Dict, List, Tuple
 
-from numpy import sqrt, diag, average
 from scipy.optimize import curve_fit
 
 from energyplus_pet.equipment.equip_types import EquipType
@@ -256,7 +256,10 @@ class BaseEquipment:
         )
         raw_parameters = curve_fit_response[0]
         calculated_parameters = list(raw_parameters)
-        average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
+        diagonal = curve_fit_response[1].diagonal()
+        square_roots = [sqrt(d) for d in diagonal]
+        average_err_one_sigma = sum(square_roots) / len(square_roots)
+        # average_err_one_sigma = average(sqrt(diag(curve_fit_response[1])))
         return calculated_parameters, average_err_one_sigma
 
     @staticmethod
