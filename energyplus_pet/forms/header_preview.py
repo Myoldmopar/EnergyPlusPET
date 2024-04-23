@@ -1,8 +1,6 @@
 from tkinter import Toplevel, Button, Frame, Label, HORIZONTAL, TOP, X
 from tkinter.ttk import Separator
 
-from pyperclip import copy
-
 from energyplus_pet.equipment.base import BaseEquipment
 
 
@@ -47,10 +45,12 @@ class RequiredDataPreviewForm(Toplevel):
         self.transient(parent_window)
 
     def _copy(self):
-        copy(self._summary)
+        self.clipboard_clear()
+        self.clipboard_append(self._summary)
 
     def _copy_csv(self):
-        copy(self._csv)
+        self.clipboard_clear()
+        self.clipboard_append(self._csv)
 
     def _done(self):
         self.grab_release()

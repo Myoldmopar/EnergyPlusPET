@@ -5,10 +5,8 @@
 # so here we are with matplotlib.  And once we have matplotlib, we already get numpy, so there's no reason to not
 # use numpy for arrays.  If I can ever find a really lightweight plot libraries, I'll try to remove matplotlib and numpy
 matplotlib
-numpy
 scipy
-pyperclip
-tksheet
+tksheet==7.1.8
 pillow>=8.0.0
 
 # for building documentation
@@ -19,6 +17,7 @@ sphinx_rtd_theme
 nose
 coverage
 coveralls  # really just for github, but it's fine
+flake8
 
 # for building wheels, mostly from github, but it's fine
 wheel

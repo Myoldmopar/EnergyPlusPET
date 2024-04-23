@@ -1,5 +1,4 @@
 from enum import Enum, auto
-import numpy as np
 from tkinter import Toplevel, Frame  # containers
 from tkinter import Button, Label  # widgets
 from tkinter import TOP, X, BOTH, ALL  # appearance stuff
@@ -52,7 +51,7 @@ class CatalogDataPlotForm(Toplevel):
             plot_notebook.add(plot_frame, text=pd[0])
             fig = Figure(figsize=(7, 5))
             a = fig.add_subplot(111)
-            a.plot(np.array(pd[1]), np.array(pd[2]))
+            a.plot(pd[1], pd[2])
             a.set_title("Catalog Data Display", fontsize=16)
             a.set_ylabel(f"[{pd[3]}]", fontsize=14)
             a.set_xlabel("Catalog Data Points (no order)", fontsize=14)
