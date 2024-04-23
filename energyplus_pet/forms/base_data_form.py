@@ -37,7 +37,7 @@ class MainDataForm(Toplevel):
         super().__init__(parent_window, height=200, width=300)
         self.title(f"{parent_window.title()}: Main Catalog Data Input")
         p = 4
-        self.equipment_instance = eq
+        self.equip = eq
         self.exit_code = MainDataForm.MainDataExitCode.Done
         self.need_to_conform_units = False
         self.final_base_data_rows: list[list[float]] = [[]]
@@ -55,21 +55,21 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         #
         tabular_frame = Frame(self)
         column_units = eq.headers().unit_array()
-        self.expected_num_columns = len(column_units)
+        self.num_columns = len(column_units)
         self.table = Sheet(
             tabular_frame,
             expand_sheet_if_paste_too_big=True,
-            paste_insert_column_limit=self.expected_num_columns,
+            paste_insert_column_limit=self.num_columns,
             startup_select=(1, 1, 1, 1, "cells"),
             align="c",
             header_align="c",
             headers=eq.headers().name_array(),
-            data=[[0.0 for _ in range(self.expected_num_columns)] for _ in range(eq.minimum_data_points_for_generation())]
+            data=[[0.0 for _ in range(self.num_columns)] for _ in range(eq.minimum_data_points_for_generation())]
         )
 
         # Would be nice to create a struct of extra data and tag each column with it rather than separate lists
         self.columnar = [MainDataForm.ColumnUnitData() for _ in range(len(column_units))]
-        for col in range(self.expected_num_columns):
+        for col in range(self.num_columns):
             this_column_unit_type = column_units[col]
             this_column_unit_type_class = unit_class_factory(this_column_unit_type)
             self.columnar[col].unit_type_class = this_column_unit_type_class
@@ -87,27 +87,20 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                 values=this_column_unit_strings,
                 set_value=preferred_unit_string,
                 state="readonly",
-                redraw=False,
-                selection_function=None,
-                modified_function=self._units_changed
             )
         self._num_bad_cells = 0
         self.table.enable_bindings()
         self.table.set_all_cell_sizes_to_text(redraw=True)
         self.table.edit_validation(self._cell_edited)
         # self.table.extra_bindings("end_edit_cell", func=self._cell_edited)
-        self.table.extra_bindings("end_paste", func=self._cells_pasted)
+        self.table.extra_bindings("end_paste", func=self._analyze_table_data)
         # Undo events in the table could bypass our bindings, need to verify this
         self.table.select_cell(row=1, column=0)
         self.table.pack(side=TOP, expand=True, fill=BOTH, padx=p, pady=p)
         tabular_frame.pack(side=TOP, fill=BOTH, expand=True, padx=p, pady=p)
-        Label(
-            self,
-            text="""Enter numeric data, set the units for each column, then press Conform or OK to continue."""
-        ).pack(
+        Label(self, text="""Enter numeric data, set units for each column, then press Conform/OK to continue.""").pack(
             side=TOP, fill=X, expand=False, padx=p, pady=p
         )
-
         #
         Separator(self, orient=HORIZONTAL).pack(side=TOP, fill=X, expand=False, padx=p, pady=p)
         #
@@ -161,12 +154,17 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                 for col in range(self.table.total_columns()):
                     self.table.set_cell_data(row, col, (row + 1.0) * (col + 1.0))
             self.table.redraw()
-            self._cells_pasted()
+            self._analyze_table_data()
 
     def _cell_edited(self, event):
         for (row, column), old_value in event.cells.table.items():
             if row == 0:
-                return
+                # we are in a units row, handle that here
+                if event.value != self.columnar[column].preferred_unit_string:
+                    self.need_to_conform_units = True
+                self._analyze_table_data()  # simulate a paste event
+                self.refresh_done_conform_button_text()
+                return event.value
             # first check the current value to see if it was already bad -- it will be the old value in the cell
             try:
                 float(old_value)
@@ -192,7 +190,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         self.table.redraw()
         return event.value
 
-    def _cells_pasted(self, _=None):
+    def _analyze_table_data(self, _=None):
         self._num_bad_cells = 0
         for row in range(self.table.total_rows()):
             if row == 0:
@@ -206,9 +204,6 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
                     self.table.highlight_cells(row, column, bg='pink')
         self.table.redraw()
 
-    def _table_data_all_good(self) -> bool:
-        return self._num_bad_cells == 0
-
     def any_blank_cells(self):
         for row in range(self.table.total_rows()):
             for col in range(self.table.total_columns()):
@@ -219,28 +214,13 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
     def _quick_convert_ip(self):
         for col_num in range(self.table.total_columns()):
             self.table.set_cell_data(0, col_num, self.columnar[col_num].ip_unit_string, redraw=True)
-        self._units_changed()
+        self.need_to_conform_units = True  # since we are converting to IP, we know this
+        self.refresh_done_conform_button_text()
 
     def _quick_convert_si(self):
         for col_num in range(self.table.total_columns()):
             self.table.set_cell_data(0, col_num, self.columnar[col_num].preferred_unit_string, redraw=True)
-        self._units_changed()
-
-    def _units_changed(self, dropdown_edit_cell_event=None):
-        try:
-            this_column = dropdown_edit_cell_event.selected.column if dropdown_edit_cell_event else None
-        except Exception as e:
-            raise Exception("Error in _units_changed, original contents: {}".format(e)) from None
-        self.need_to_conform_units = False
-        for c in range(self.table.total_columns()):
-            if c == this_column:
-                units_value_this_column = next(iter(dropdown_edit_cell_event.cells.table.values()))  # currently being modified
-            else:
-                units_value_this_column = self.table.data[0][c]  # just get the data from the cell
-            if units_value_this_column != self.columnar[c].preferred_unit_string:
-                self.need_to_conform_units = True
-        print(self.need_to_conform_units)
-        self._cells_pasted()  # simulate a paste event
+        self.need_to_conform_units = False  # since we are converting to SI, we know this
         self.refresh_done_conform_button_text()
 
     def refresh_done_conform_button_text(self):
@@ -250,12 +230,9 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
             self.done_conform_text.set("OK, Continue")
         self.table.redraw()
 
-    def _update_from_traces(self):
-        pass
-
     def _done_or_conform(self):
         # don't try to conorm or exit if there are any bad values
-        if not self._table_data_all_good():
+        if self._num_bad_cells > 0:
             message_window = PetMessageForm(
                 self, "Value Issue", f"{self._num_bad_cells} cell(s) appear to have bad values; fix them and retry"
             )
@@ -264,7 +241,7 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
         if self.need_to_conform_units:
             self.conform_units()
         else:
-            if self.expected_num_columns != self.table.total_columns():
+            if self.num_columns != self.table.total_columns():
                 message_window = PetMessageForm(
                     self,
                     "Problem with Table Size",
@@ -298,8 +275,6 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
             current_units_string = self.table.data[0][c]
             if current_units_string != self.columnar[c].preferred_unit_string:
                 try:
-                    print(current_units_string)
-                    print(self.columnar[c].unit_type_class)
                     current_unit_id = self.columnar[c].unit_type_class.get_id_from_unit_string(current_units_string)
                 except EnergyPlusPetException:
                     pmf = PetMessageForm(self, "Unit ID Problem", "Could not match unit ID; this is a developer issue.")
