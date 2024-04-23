@@ -17,6 +17,7 @@ sphinx_rtd_theme
 nose
 coverage
 coveralls  # really just for github, but it's fine
+flake8
 
 # for building wheels, mostly from github, but it's fine
 wheel
