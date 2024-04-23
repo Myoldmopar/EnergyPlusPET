@@ -66,7 +66,6 @@ to paste/cleanup the data in a spreadsheet, then copy the data and paste directl
             headers=eq.headers().name_array(),
             data=[[0.0 for _ in range(self.num_columns)] for _ in range(eq.minimum_data_points_for_generation())]
         )
-
         # Would be nice to create a struct of extra data and tag each column with it rather than separate lists
         self.columnar = [MainDataForm.ColumnUnitData() for _ in range(len(column_units))]
         for col in range(self.num_columns):
