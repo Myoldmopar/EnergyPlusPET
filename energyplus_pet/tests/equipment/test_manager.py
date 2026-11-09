@@ -17,6 +17,10 @@ class TestEquipmentFactory(TestCase):
             EquipType.WWHP_Heating_CurveFit: self.assertIsNotNone,
             EquipType.WWHP_Cooling_CurveFit: self.assertIsNotNone,
             EquipType.Pump_ConstSpeed_ND: self.assertIsNone,
+            EquipType.ASHP_Heating_CurveFit: self.assertIsNotNone,
+            EquipType.ASHP_Cooling_CurveFit: self.assertIsNotNone,
+            EquipType.AWHP_Heating_CurveFit: self.assertIsNotNone,
+            EquipType.AWHP_Cooling_CurveFit: self.assertIsNotNone,
         }
         # make sure we have the full set of equipment in our list
         self.assertEqual(len(expected_outcome), len(list(EquipType)))

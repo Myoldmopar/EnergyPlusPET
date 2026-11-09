@@ -14,6 +14,10 @@ class TestEquipTypeUniqueStrings(TestCase):
             EquipTypeUniqueStrings.WWHP_Heating_CurveFit,
             EquipTypeUniqueStrings.WWHP_Cooling_CurveFit,
             EquipTypeUniqueStrings.Pump_ConstSpeed_ND,
+            EquipTypeUniqueStrings.ASHP_Heating_CurveFit,
+            EquipTypeUniqueStrings.ASHP_Cooling_CurveFit,
+            EquipTypeUniqueStrings.AWHP_Heating_CurveFit,
+            EquipTypeUniqueStrings.AWHP_Cooling_CurveFit,
         )
         for string in all_strings:
             self.assertIsInstance(EquipTypeUniqueStrings.get_equip_type_from_unique_string(string), EquipType)
