@@ -6,6 +6,14 @@ from energyplus_pet.equipment.wahp_heating_curve import WaterToAirHeatPumpHeatin
 from energyplus_pet.equipment.wahp_cooling_curve import WaterToAirHeatPumpCoolingCurveFit
 from energyplus_pet.equipment.wwhp_heating_curve import WaterToWaterHeatPumpHeatingCurveFit
 from energyplus_pet.equipment.wwhp_cooling_curve import WaterToWaterHeatPumpCoolingCurveFit
+from energyplus_pet.equipment.ashp_curve import (
+    AirSourceHeatPumpHeatingCurveFit,
+    AirSourceHeatPumpCoolingCurveFit,
+)
+from energyplus_pet.equipment.awhp_curve import (
+    AirToWaterHeatPumpHeatingCurveFit,
+    AirToWaterHeatPumpCoolingCurveFit,
+)
 
 
 class EquipmentFactory:
@@ -23,6 +31,10 @@ class EquipmentFactory:
             EquipType.WWHP_Heating_CurveFit: WaterToWaterHeatPumpHeatingCurveFit,
             EquipType.WWHP_Cooling_CurveFit: WaterToWaterHeatPumpCoolingCurveFit,
             EquipType.Pump_ConstSpeed_ND: None,
+            EquipType.ASHP_Heating_CurveFit: AirSourceHeatPumpHeatingCurveFit,
+            EquipType.ASHP_Cooling_CurveFit: AirSourceHeatPumpCoolingCurveFit,
+            EquipType.AWHP_Heating_CurveFit: AirToWaterHeatPumpHeatingCurveFit,
+            EquipType.AWHP_Cooling_CurveFit: AirToWaterHeatPumpCoolingCurveFit,
         }
         return type_map.get(equipment_type, None)
 

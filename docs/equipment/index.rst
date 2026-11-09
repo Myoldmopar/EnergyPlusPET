@@ -18,10 +18,10 @@ of solving the system are tucked away inside SciPy and we can leverage that open
 library to do the work for us.  Thus, it is simply the equipment classes responsibility to
 properly prepare the bulk input data for processing, and present the data once complete.
 
-The equipment should define the worker function that represents the model formulation.  
-For the heat pumps already implemented, the formulations are all very similar, using a
-quad-linear equation with 5 coefficients.  Because of this, the function is placed in a 
-common location to keep things DRY.  
+The equipment should define the worker function that represents the model formulation.
+Water-source heat pumps use a five-coefficient quad-linear equation. Air-source DX heat
+pumps use EnergyPlus biquadratic temperature curves and quadratic airflow curves.
+Air-to-water heat pumps use biquadratic outdoor-air and leaving-water temperature curves.
 
 A typical component will then:
 
@@ -45,6 +45,8 @@ the format for the output objects, and defining some basic parameters to describ
    wahp_cooling_curve
    wwhp_heating_curve
    wwhp_cooling_curve
+   ashp_curve
+   awhp_curve
    column_header
    equip_types
    manager

@@ -285,11 +285,11 @@ class BaseEquipment:
         return predicated_values, error_values
 
     @staticmethod
-    def current_eplus_version_object_idf() -> str:
+    def current_eplus_version_object_idf(version_identifier: float = 22.2) -> str:
         """Returns a version IDF object string to include in IDF outputs"""
-        return BaseEquipment.fill_eplus_object_format('Version', [('Version Identifier', 22.2)])
+        return BaseEquipment.fill_eplus_object_format('Version', [('Version Identifier', version_identifier)])
 
     @staticmethod
-    def current_eplus_version_object_epjson() -> Dict:
+    def current_eplus_version_object_epjson(version_identifier: float = 22.2) -> Dict:
         """Returns a version EpJSON object to include in EpJSON outputs"""
-        return {'Version': {'Version 1': {'version_identifier': 22.2}}}
+        return {'Version': {'Version 1': {'version_identifier': version_identifier}}}
